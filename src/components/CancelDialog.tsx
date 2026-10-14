@@ -1,0 +1,179 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
+import { useCancelBooking } from '@/lib/useSchedule'
+import { cn } from '@/lib/utils'
+import type { WeekSlot, Weekday } from '@/lib/types'
+
+const DAY_FULL: Record<Weekday, TranslationKey> = {
+  1: 'monFull',
+  2: 'tueFull',
+  3: 'wedFull',
+  4: 'thuFull',
+  5: 'friFull',
+}
+
+const schema = z.object({
+  studentId: z.string().regex(/^\d{10}$/),
+})
+
+type FormValues = z.infer<typeof schema>
+
+function errorMessageKey(message: string): TranslationKey {
+  const m = message.toUpperCase()
+  if (m.includes('INVALID_STUDENT_ID')) return 'invalidStudentId'
+  if (m.includes('NOT_YOUR_BOOKING')) return 'notYourBooking'
+  if (m.includes('BOOKING_NOT_FOUND')) return 'bookingNotFound'
+  return 'errorMsg'
+}
+
+function fmtTime(time: string): string {
+  const [h, m] = time.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 === 0 ? 12 : h % 12
+  return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
+interface CancelDialogProps {
+  open: boolean
+  slot: WeekSlot | null
+  weekStart: string
+  onClose: () => void
+}
+
+function CancelDialogBody({
+  slot,
+  weekStart,
+  onClose,
+}: {
+  slot: WeekSlot
+  weekStart: string
+  onClose: () => void
+}) {
+  const { t } = useI18n()
+  const cancelBooking = useCancelBooking(weekStart)
+  const [sent, setSent] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { studentId: '' },
+  })
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const dayLabel = t(DAY_FULL[slot.day_of_week])
+  const timeLabel = `${fmtTime(slot.slot_start)}`
+
+  const onSubmit = handleSubmit(async (values) => {
+    try {
+      await cancelBooking.mutateAsync({
+        bookingId: slot.booking_id ?? '',
+        studentId: values.studentId,
+      })
+      setSent(true)
+      toast.success(t('cancelled'))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      toast.error(t(errorMessageKey(message)))
+    }
+  })
+
+  return (
+    <div className="sheet" onClick={onClose}>
+      <div
+        className="folder mf"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="fin" style={{ ['--c' as string]: 'var(--peach)' }}>
+          <span className="sq" />
+          {sent ? (
+            <div style={{ marginTop: 14 }}>
+              <h2 id="cancel-title" style={{ margin: 0, fontWeight: 500, fontSize: 24 }}>
+                {t('cancelled')}
+              </h2>
+              <div className="acts">
+                <button type="button" className="pill ok" onClick={onClose}>
+                  {t('close')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} style={{ marginTop: 14 }}>
+              <h2 id="cancel-title" style={{ margin: 0, fontWeight: 500, fontSize: 24 }}>
+                {t('cancelTitle')}
+              </h2>
+              <p style={{ margin: '6px 0 14px' }}>
+                {dayLabel} · {timeLabel}
+                {slot.student_name ? ` · ${slot.student_name}` : ''}
+                {slot.mode ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}` : ''}
+              </p>
+              <p className="meta" style={{ margin: '0 0 10px', textTransform: 'none', letterSpacing: '0.02em' }}>
+                {t('cancelBody')}
+              </p>
+
+              <label style={{ display: 'block', marginBottom: 12 }}>
+                <span className="meta" style={{ display: 'block', marginBottom: 4 }}>
+                  {t('studentId')}
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  {...register('studentId')}
+                  placeholder={t('studentIdPlaceholder')}
+                  autoFocus
+                  maxLength={10}
+                  className={cn(errors.studentId && 'border-red')}
+                />
+                {errors.studentId && (
+                  <span className="meta" style={{ color: '#E5533D' }}>
+                    {t('invalidStudentId')}
+                  </span>
+                )}
+              </label>
+
+              <div className="acts">
+                <button type="button" className="pill" onClick={onClose}>
+                  {t('cancel')}
+                </button>
+                <button type="submit" className="pill ok" disabled={cancelBooking.isPending}>
+                  {cancelBooking.isPending ? t('loading') : t('cancelConfirm')}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CancelDialog({ open, slot, weekStart, onClose }: CancelDialogProps) {
+  if (!open || !slot) return null
+  return (
+    <CancelDialogBody
+      key={`${slot.booking_id ?? slot.slot_start}-${slot.day_of_week}`}
+      slot={slot}
+      weekStart={weekStart}
+      onClose={onClose}
+    />
+  )
+}
+
+export default CancelDialog
