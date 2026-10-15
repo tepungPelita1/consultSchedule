@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { TranslationKey } from '@/lib/i18n'
-import { useI18n } from '@/lib/i18n'
+import { interpolate, useI18n } from '@/lib/i18n'
 import {
   useAllowlist,
+  useBookingWeeks,
   useBookings,
   useClearWeekBookings,
   useClearWeekExtraClasses,
   useSetBookingStatus,
 } from '@/lib/useSchedule'
 import type { Booking, BookingStatus, Weekday } from '@/lib/types'
+import { cn, weekNumber } from '@/lib/utils'
 
 const DAY_FULL: Record<Weekday, TranslationKey> = {
   1: 'monFull',
@@ -50,13 +52,17 @@ function avatarFor(studentId: string, index: number): string {
 
 interface MadamPanelProps {
   weekStart: string
+  /** Tiga minggu boleh tempah: minggu semasa, +1, +2 (Isnin setiap satu). */
+  weeks: string[]
   pin: string
   onUnauthorized: () => void
+  onSelectWeek: (week: string) => void
 }
 
-function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
+function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: MadamPanelProps) {
   const { t } = useI18n()
   const bookings = useBookings(weekStart)
+  const bookingWeeks = useBookingWeeks(weeks)
   const allowlist = useAllowlist()
   const setStatus = useSetBookingStatus(weekStart)
   const clearBookings = useClearWeekBookings(weekStart)
@@ -64,6 +70,7 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
 
   const [confirming, setConfirming] = useState(false)
   const [resetText, setResetText] = useState('')
+  const [showStudents, setShowStudents] = useState(false)
 
   const fail = (err: unknown) => {
     const message = err instanceof Error ? err.message : ''
@@ -122,51 +129,105 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
     (a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1),
   )
 
+  // Tab minggu: papar minggu yang ada tempahan sahaja (serta minggu aktif semasa).
+  const reserved = bookingWeeks.data ?? []
+  const tabWeeks = reserved.length > 0
+    ? weeks.filter((week) => reserved.includes(week) || week === weekStart)
+    : []
+
+  const weekTabLabel = (week: string) =>
+    week === weeks[0]
+      ? t('thisWeek')
+      : interpolate(t('weekLabel'), { n: weekNumber(week) })
+
   return (
     <div className="madmam-panel">
-      {/* Tempahan minggu ini */}
+      {/* Tiga minggu: tab muncul hanya jika ada tempahan */}
+      {tabWeeks.length > 0 && (
+        <div className="madam-tabs" role="tablist" aria-label={t('weekBookings')}>
+          {tabWeeks.map((week) => {
+            const active = week === weekStart
+            return (
+              <button
+                key={week}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={cn('pill', active && 'active')}
+                onClick={() => onSelectWeek(week)}
+              >
+                {weekTabLabel(week)}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Tempahan minggu dipilih */}
       <section>
-        <h3 className="meta" style={{ margin: '0 0 6px' }}>
-          {t('weekBookings')}
-        </h3>
+        <div className="madam-head">
+          <h3 className="meta" style={{ margin: 0 }}>
+            {t('weekBookings')}
+          </h3>
+          {rows.length > 0 && (
+            <span className="meta" style={{ opacity: 0.6 }}>
+              {interpolate(t('bookingsCount'), { n: rows.length })}
+            </span>
+          )}
+        </div>
         {bookings.isLoading ? (
           <p className="meta">{t('loading')}</p>
         ) : rows.length > 0 ? (
-          <div>
-            {rows.map((booking: Booking) => {
+          <div className="madam-grid">
+            {rows.map((booking: Booking, index: number) => {
               const pending = booking.status === 'pending'
               return (
-                <div key={booking.id} className="madmam-row">
-                  <div>
-                    <b style={{ fontWeight: 500 }}>
-                      {displayName(booking)} <span className="meta">({booking.student_id})</span>
-                    </b>
-                    <div className="meta">
-                      {t(DAY_FULL[booking.day_of_week])} · {fmtTime(booking.slot_start)} ·{' '}
-                      {t(booking.mode === 'online' ? 'online' : 'inperson')}
+                <div
+                  key={booking.id}
+                  className={cn('madam-card', pending && 'is-pending')}
+                >
+                  <div className="madam-card-top">
+                    <span className="avatar">{avatarFor(booking.student_id, index)}</span>
+                    <div className="madam-card-who">
+                      <b>{displayName(booking)}</b>
+                      <span className="meta">{booking.student_id}</span>
                     </div>
+                    <span
+                      className={cn(
+                        'madam-badge',
+                        booking.status === 'pending' && 'is-pending',
+                        booking.status === 'approved' && 'is-approved',
+                        booking.status === 'rejected' && 'is-rejected',
+                      )}
+                    >
+                      {t(STATUS_KEY[booking.status])}
+                    </span>
                   </div>
-                  {pending ? (
-                    <div style={{ display: 'flex', gap: 8 }}>
+
+                  <div className="madam-card-meta">
+                    {t(DAY_FULL[booking.day_of_week])} · {fmtTime(booking.slot_start)} ·{' '}
+                    {t(booking.mode === 'online' ? 'online' : 'inperson')}
+                  </div>
+
+                  {pending && (
+                    <div className="madam-card-acts">
                       <button
                         type="button"
-                        className="pill ok"
+                        className="pill approve"
                         disabled={setStatus.isPending}
                         onClick={() => void handleStatus(booking.id, 'approved')}
                       >
-                        {t('approve')}
+                        ✓ {t('approve')}
                       </button>
                       <button
                         type="button"
-                        className="pill"
+                        className="pill reject"
                         disabled={setStatus.isPending}
                         onClick={() => void handleStatus(booking.id, 'rejected')}
                       >
-                        {t('reject')}
+                        ✕ {t('reject')}
                       </button>
                     </div>
-                  ) : (
-                    <span className="meta">{t(STATUS_KEY[booking.status])}</span>
                   )}
                 </div>
               )
@@ -177,43 +238,52 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
         )}
       </section>
 
-      {/* Senarai pelajar seliaan (read-only) */}
+      {/* Senarai pelajar seliaan (tersembunyi sehingga ditekan) */}
       <section style={{ marginTop: 16 }}>
-        <h3 className="meta" style={{ margin: '0 0 6px' }}>
-          {t('supervisees')}
-        </h3>
-        {allowlist.isLoading ? (
-          <p className="meta">{t('loading')}</p>
-        ) : allowlist.data && allowlist.data.length > 0 ? (
-          <div className="supervisee">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('studentName')}</th>
-                  <th>{t('studentId')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allowlist.data.map((entry, index) => (
-                  <tr key={entry.id}>
-                    <td>
-                      <span className="who">
-                        <span className="avatar">{avatarFor(entry.student_id, index)}</span>
-                        <span>{entry.full_name || entry.name}</span>
-                      </span>
-                    </td>
-                    <td>{entry.student_id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <button
+          type="button"
+          className="pill"
+          onClick={() => setShowStudents((value) => !value)}
+          aria-expanded={showStudents}
+        >
+          {showStudents ? t('hideSupervisees') : t('showSupervisees')}
+        </button>
+        {showStudents && (
+          <div style={{ marginTop: 10 }}>
+            {allowlist.isLoading ? (
+              <p className="meta">{t('loading')}</p>
+            ) : allowlist.data && allowlist.data.length > 0 ? (
+              <div className="supervisee">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t('studentName')}</th>
+                      <th>{t('studentId')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allowlist.data.map((entry, index) => (
+                      <tr key={entry.id}>
+                        <td>
+                          <span className="who">
+                            <span className="avatar">{avatarFor(entry.student_id, index)}</span>
+                            <span>{entry.full_name || entry.name}</span>
+                          </span>
+                        </td>
+                        <td>{entry.student_id}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="meta">{t('noAllowlist')}</p>
+            )}
           </div>
-        ) : (
-          <p className="meta">{t('noAllowlist')}</p>
         )}
       </section>
 
-      {/* Urus minggu ini: reset (kosongkan tempahan + kelas ad-hoc) */}
+      {/* Urus minggu: reset (kosongkan tempahan + kelas ad-hoc) */}
       <section style={{ marginTop: 16 }}>
         <h3 className="meta" style={{ margin: '0 0 6px' }}>
           {t('manageWeek')}

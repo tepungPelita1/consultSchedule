@@ -69,7 +69,7 @@ Blok: border 1px, radius 6px, padding 8px 9px, nama atas / masa kecil bawah.
 - Jadual kelas mingguan (hardcode di `supabase/seed.sql`): `class_blocks` dengan `week_start = null` (berulang).
 - Kelas tambahan (Mod madam): `class_blocks` dengan `week_start` = minggu tertentu.
 - Status slot (keutamaan): **ditempah → kelas tambahan → kelas mingguan → kosong**.
-- Backend: **Supabase** (Postgres + RLS + RPC). `bookings` sah ikut minggu semasa.
+- Backend: **Supabase** (Postgres + RLS + RPC). `bookings` sah dalam tetingkap minggu semasa + 2 minggu ke hadapan (prebooking).
 - Navigasi: ◀ ▶ tukar minggu, "Hari ini" balik ke minggu semasa. Minggu bermula Isnin.
 
 ## 8. Do / Don't

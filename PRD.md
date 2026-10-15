@@ -25,7 +25,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 - **FR-2** Kelas tetap Madam dipapar sebagai blok teal (kod subjek + masa), tak boleh ditempah.
 - **FR-3** Slot kosong 30 minit antara kelas boleh ditempah.
 - **FR-4** Borang tempah: nama pendek + studentID + mod (Bersemuka/Online).
-- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; minggu semasa sahaja.
+- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; tempahan dibuka untuk minggu semasa + 2 minggu ke hadapan (prebooking).
 - **FR-6** Tempahan status `pending` → Madam approve/reject.
 - **FR-7** Soft reset mingguan (query ikut `week_start`).
 - **FR-8** Navigasi minggu: ◀ ▶ + "Hari ini".
@@ -35,7 +35,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 ## 5. Peraturan Perniagaan
 - **BR-1** Satu slot = 1 pelajar.
 - **BR-2** Max 1 tempahan sehari/pelajar.
-- **BR-3** Tempahan hanya minggu semasa.
+- **BR-3** Tempahan dibuka bagi minggu semasa + 2 minggu ke hadapan (prebooking). Navigasi minggu dihadkan pada tetingkap ini.
 - **BR-4** Waktu kerja 08:00–18:00.
 - **BR-5** `pending`/`approved` = penuh; `rejected` kembali kosong.
 

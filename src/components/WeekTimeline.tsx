@@ -71,12 +71,14 @@ function subjectColor(label: string): string {
 
 interface FolderHeaderProps {
   weekStart: string
+  canPrev: boolean
+  canNext: boolean
   onPrev: () => void
   onNext: () => void
   onToday: () => void
 }
 
-function FolderHeader({ weekStart, onPrev, onNext, onToday }: FolderHeaderProps) {
+function FolderHeader({ weekStart, canPrev, canNext, onPrev, onNext, onToday }: FolderHeaderProps) {
   const { t, lang } = useI18n()
   const locale = lang === 'ms' ? msLocale : enUS
   const monday = parseISO(weekStart)
@@ -92,7 +94,13 @@ function FolderHeader({ weekStart, onPrev, onNext, onToday }: FolderHeaderProps)
         <div className="hbot">
           <span className="meta">{t('headerMeta')}</span>
           <div className="nav">
-            <button type="button" className="pill" onClick={onPrev} aria-label={t('prevWeek')}>
+            <button
+              type="button"
+              className="pill"
+              onClick={onPrev}
+              disabled={!canPrev}
+              aria-label={t('prevWeek')}
+            >
               ←
             </button>
             <button
@@ -103,7 +111,13 @@ function FolderHeader({ weekStart, onPrev, onNext, onToday }: FolderHeaderProps)
             >
               {weekNo >= 1 ? interpolate(t('weekLabel'), { n: weekNo }) : t('thisWeek')}
             </button>
-            <button type="button" className="pill" onClick={onNext} aria-label={t('nextWeek')}>
+            <button
+              type="button"
+              className="pill"
+              onClick={onNext}
+              disabled={!canNext}
+              aria-label={t('nextWeek')}
+            >
               →
             </button>
           </div>

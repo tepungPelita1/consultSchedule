@@ -8,14 +8,17 @@ import MadamGate from '@/components/MadamGate'
 import MadamPanel from '@/components/ModMadam'
 import { FolderHeader, WeekTimeline } from '@/components/WeekTimeline'
 import { interpolate, useI18n } from '@/lib/i18n'
-import { getCurrentWeekStart } from '@/lib/slots'
+import { getBookableWeeks, getCurrentWeekStart, getMaxBookableWeekStart } from '@/lib/slots'
 import { useAddExtraClass, useRemoveExtraClass, useWeekView } from '@/lib/useSchedule'
 import type { FreeBlock, WeekSlot } from '@/lib/types'
 import { weekRangeLabel } from '@/lib/utils'
 
 function SchedulePage() {
   const { t, lang } = useI18n()
-  const [weekStart, setWeekStart] = useState<string>(getCurrentWeekStart())
+  const currentWeekStart = getCurrentWeekStart()
+  const maxWeekStart = getMaxBookableWeekStart()
+  const bookableWeeks = getBookableWeeks()
+  const [weekStart, setWeekStart] = useState<string>(currentWeekStart)
   const [madamMode, setMadamMode] = useState<boolean>(() =>
     Boolean(sessionStorage.getItem('csi.madamPin')),
   )
@@ -33,8 +36,10 @@ function SchedulePage() {
   const freeCount = slots.filter((s) => s.status === 'available').length
 
   const shift = (days: number) => {
-    const next = addDays(parseISO(weekStart), days)
-    setWeekStart(format(next, 'yyyy-MM-dd'))
+    const next = format(addDays(parseISO(weekStart), days), 'yyyy-MM-dd')
+    // Had tempahan: minggu semasa hingga +2 minggu sahaja.
+    if (next < currentWeekStart || next > maxWeekStart) return
+    setWeekStart(next)
   }
 
   const handleUnauthorized = () => {
@@ -100,13 +105,20 @@ function SchedulePage() {
     >
       <FolderHeader
         weekStart={weekStart}
+        canPrev={weekStart > currentWeekStart}
+        canNext={weekStart < maxWeekStart}
         onPrev={() => shift(-7)}
         onNext={() => shift(7)}
-        onToday={() => setWeekStart(getCurrentWeekStart())}
+        onToday={() => setWeekStart(currentWeekStart)}
       />
 
       <div className="weekbar">
-        <h2>{weekRangeLabel(weekStart, lang)}</h2>
+        <div>
+          <h2>{weekRangeLabel(weekStart, lang)}</h2>
+          <span className="meta" style={{ letterSpacing: '0.02em', textTransform: 'none' }}>
+            {t('bookingWindow')}
+          </span>
+        </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="legend">
             <span>
@@ -182,7 +194,13 @@ function SchedulePage() {
       </div>
 
       {madamMode && (
-        <MadamPanel weekStart={weekStart} pin={madamPin} onUnauthorized={handleUnauthorized} />
+        <MadamPanel
+          weekStart={weekStart}
+          weeks={bookableWeeks}
+          pin={madamPin}
+          onUnauthorized={handleUnauthorized}
+          onSelectWeek={setWeekStart}
+        />
       )}
 
       <BookingDialog

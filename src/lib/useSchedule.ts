@@ -22,9 +22,11 @@ import {
   clearWeekBookings,
   clearWeekExtraClasses,
   fetchAllowlist,
+  fetchBookingWeeks,
   fetchBookings,
   fetchClassBlocks,
   fetchWeekSlots,
+  getCurrentWeekStart,
   madamVerify,
   removeAllowlistEntry,
   removeExtraClass,
@@ -50,6 +52,7 @@ const weekSlotsKey = (weekStart: string) => ['week-slots', weekStart] as const
 const classBlocksKey = (weekStart: string) => ['class-blocks', weekStart] as const
 const bookingsKey = (weekStart: string) => ['bookings', weekStart] as const
 const allowlistKey = ['allowlist'] as const
+const bookingWeeksKey = ['booking-weeks'] as const
 
 /* ------------------------------------------------------------------ *
  * Slots + class blocks (minggu berkenaan)
@@ -136,6 +139,7 @@ export function useBookRange(weekStart: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
     },
   })
 }
@@ -161,6 +165,7 @@ export function useCancelBooking(weekStart: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
     },
   })
 }
@@ -176,6 +181,22 @@ export function useBookings(weekStart: string) {
       if (isSupabaseConfigured) return fetchBookings(weekStart)
       await delay(200)
       return ensureMockBookings(weekStart).filter((b) => b.week_start === weekStart)
+    },
+  })
+}
+
+/** Minggu (dalam kalangan yang diberi) yang ada tempahan aktif — untuk tab Mod madam. */
+export function useBookingWeeks(weeks: string[]) {
+  return useQuery({
+    queryKey: [...bookingWeeksKey, ...weeks] as const,
+    queryFn: async (): Promise<string[]> => {
+      if (isSupabaseConfigured) return fetchBookingWeeks(weeks)
+      await delay(150)
+      if (weeks.length === 0) return []
+      const active = ensureMockBookings(getCurrentWeekStart()).filter(
+        (b) => weeks.includes(b.week_start) && (b.status === 'pending' || b.status === 'approved'),
+      )
+      return [...new Set(active.map((b) => b.week_start))]
     },
   })
 }
@@ -201,6 +222,7 @@ export function useSetBookingStatus(weekStart: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
     },
   })
 }
@@ -331,6 +353,7 @@ export function useClearWeekBookings(weekStart: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
     },
   })
 }

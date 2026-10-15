@@ -1,16 +1,38 @@
+import { addDays, format, parseISO } from 'date-fns'
 import { supabase } from './supabase'
 import type { AllowlistEntry, Booking, BookingMode, ClassBlock, WeekSlot, Weekday } from './types'
 
-// Isnin minggu semasa (format YYYY-MM-DD) — soft reset: paparan ikut minggu ini sahaja
+/**
+ * "Sekarang" mengikut zon waktu Asia/Kuala_Lumpur, dibina sebagai Date
+ * waktu-tempatan supaya getDay() ikut hari kalendar KL (selaras dgn server).
+ */
+function klNow(): Date {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }))
+}
+
+// Isnin minggu semasa (format YYYY-MM-DD) — soft reset: paparan ikut minggu ini sahaja.
 export function getCurrentWeekStart(): string {
-  const now = new Date()
+  const now = klNow()
   const day = (now.getDay() + 6) % 7 // Mon=0 ... Sun=6
   const monday = new Date(now)
   monday.setDate(now.getDate() - day)
-  const y = monday.getFullYear()
-  const m = String(monday.getMonth() + 1).padStart(2, '0')
-  const d = String(monday.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return format(monday, 'yyyy-MM-dd')
+}
+
+/** Bilangan minggu ke hadapan yang dibuka untuk prebooking (selain minggu semasa). */
+export const PREBOOK_WEEKS = 2
+
+/** Senarai minggu boleh tempah: minggu semasa, +1, +2 (Isnin setiap satu). */
+export function getBookableWeeks(): string[] {
+  const start = parseISO(getCurrentWeekStart())
+  return Array.from({ length: PREBOOK_WEEKS + 1 }, (_, i) =>
+    format(addDays(start, i * 7), 'yyyy-MM-dd'),
+  )
+}
+
+/** Isnin minggu terakhir yang boleh ditempah (minggu semasa + 2). */
+export function getMaxBookableWeekStart(): string {
+  return getBookableWeeks()[PREBOOK_WEEKS]
 }
 
 export async function fetchWeekSlots(weekStart: string): Promise<WeekSlot[]> {
@@ -59,6 +81,18 @@ export async function fetchBookings(weekStart: string): Promise<Booking[]> {
     .order('created_at', { ascending: false })
   if (error) throw error
   return data as Booking[]
+}
+
+/** Minggu (dalam senarai diberi) yang ada tempahan aktif — untuk tab Mod madam. */
+export async function fetchBookingWeeks(weeks: string[]): Promise<string[]> {
+  if (weeks.length === 0) return []
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('week_start')
+    .in('week_start', weeks)
+    .in('status', ['pending', 'approved'])
+  if (error) throw error
+  return [...new Set((data as { week_start: string }[]).map((row) => row.week_start))]
 }
 
 export async function fetchAllowlist(): Promise<AllowlistEntry[]> {
