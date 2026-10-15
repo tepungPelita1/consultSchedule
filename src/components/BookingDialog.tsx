@@ -7,7 +7,7 @@ import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { useBookRange } from '@/lib/useSchedule'
-import { cn } from '@/lib/utils'
+import { cn, errorText } from '@/lib/utils'
 import type { FreeBlock, Weekday } from '@/lib/types'
 
 interface BookingDialogProps {
@@ -99,7 +99,8 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
       haptic(HAPTIC.action)
       toast.success(t('bookingSent'))
     } catch (err) {
-      const message = err instanceof Error ? err.message : ''
+      const message = errorText(err)
+      console.error('[book_slot]', err)
       toast.error(t(errorMessageKey(message)))
     }
   })

@@ -7,7 +7,7 @@ import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { useCancelBooking } from '@/lib/useSchedule'
-import { cn } from '@/lib/utils'
+import { cn, errorText } from '@/lib/utils'
 import type { WeekSlot, Weekday } from '@/lib/types'
 
 const DAY_FULL: Record<Weekday, TranslationKey> = {
@@ -92,7 +92,8 @@ function CancelDialogBody({
       haptic(HAPTIC.action)
       toast.success(t('cancelled'))
     } catch (err) {
-      const message = err instanceof Error ? err.message : ''
+      const message = errorText(err)
+      console.error('[cancel_booking]', err)
       toast.error(t(errorMessageKey(message)))
     }
   })

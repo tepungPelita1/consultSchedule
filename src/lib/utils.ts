@@ -17,6 +17,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Ambil mesej teks daripada apa-apa ralat (Error, string, atau objek ralat Supabase). */
+export function errorText(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  if (err && typeof err === 'object') {
+    const value = err as {
+      message?: string
+      details?: string
+      hint?: string
+      code?: string
+    }
+    return [value.message, value.details, value.hint, value.code].filter(Boolean).join(' ')
+  }
+  return ''
+}
+
 export function weekRangeLabel(weekStart: string, lang: Lang): string {
   const locale = lang === 'ms' ? msLocale : enUS
   const monday = parseISO(weekStart)
