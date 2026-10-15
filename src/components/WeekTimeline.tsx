@@ -2,6 +2,7 @@ import { addDays, format, getDate, isSameDay, parseISO } from 'date-fns'
 import { enUS, ms as msLocale } from 'date-fns/locale'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
+import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -47,7 +48,6 @@ const WORK_DURATION = WORK_END - WORK_START
 const LONG_PRESS_MS = 1500
 const DOUBLE_TAP_MS = 500
 const MOVE_CANCEL_PX = 10
-function vibrate(pattern: number | number[]) { try { navigator.vibrate?.(pattern) } catch { } }
 
 const pct = (minutes: number): number => ((minutes - WORK_START) / WORK_DURATION) * 100
 const widthPct = (duration: number): number => (duration / WORK_DURATION) * 100
@@ -173,7 +173,6 @@ function WeekTimeline({
     if (madamMode) {
       setArmed(null)
       onAddExtra(slot)
-      vibrate(60)
       return
     }
     onBook({ day_of_week: slot.day_of_week, start: slot.slot_start, end: slot.slot_end })
@@ -362,7 +361,8 @@ function WeekTimeline({
                 ].map(({ block, student }) => {
                   const left = pct(toMinutes(block.start_time))
                   const width = widthPct(toMinutes(block.end_time) - toMinutes(block.start_time))
-                  const isExtra = block.week_start === weekStart && madamMode
+                  const isAdhoc = block.week_start != null
+                  const canRemove = isAdhoc && madamMode
                   const laneClass = twoLane ? (student ? 'lane-bottom' : 'lane-top') : undefined
 
                   const style = {
@@ -373,16 +373,21 @@ function WeekTimeline({
 
                   const content = (
                     <>
-                      <b>{block.label || t('legendClass')}</b>
+                      <b>{isAdhoc ? block.label || t('adhocLabel') : block.label || t('legendClass')}</b>
                       <span className="meta">
                         {fmtTime12(block.start_time)}
                         {block.venue ? ` · ${block.venue}` : ''}
-                        {isExtra ? ` · ${t('removeClass')}` : ''}
+                        {canRemove ? ` · ${t('removeClass')}` : ''}
                       </span>
                     </>
                   )
 
-                  const className = cn('blk kelas', laneClass, student && 'std')
+                  const className = cn(
+                    'blk kelas',
+                    isAdhoc && 'extra',
+                    laneClass,
+                    student && 'std',
+                  )
 
                   const tipData = {
                     title: t(student ? 'tipStudentClass' : 'tipMadamClass'),
@@ -391,7 +396,7 @@ function WeekTimeline({
                     }`,
                   }
 
-                  if (isExtra) {
+                  if (canRemove) {
                     return (
                       <button
                         key={block.id}
@@ -541,9 +546,9 @@ function WeekTimeline({
                           if (!info) return
                           info.becomeDrag = true
                           setArmed(null)
+                          haptic(HAPTIC.longPress)
                           if (madamMode) {
                             onAddExtra(slot)
-                            vibrate(80)
                             holdingRef.current = false
                             setHolding(false)
                             return
@@ -551,7 +556,6 @@ function WeekTimeline({
                           commitDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
                           holdingRef.current = false
                           setHolding(false)
-                          vibrate(80)
                         }, LONG_PRESS_MS)
                       }}
                       onTouchMove={(event) => {
@@ -631,13 +635,13 @@ function WeekTimeline({
                         if (isDouble || (isArmed && !holding)) {
                           lastTapRef.current = null
                           setArmed(null)
-                          vibrate(60)
+                          hapticWithFallback(HAPTIC.action, event.currentTarget)
                           startTouchSingle(slot)
                           return
                         }
                         setArmed({ day, slot_start: slot.slot_start })
                         lastTapRef.current = { day, slot_start: slot.slot_start, at: now }
-                        vibrate(40)
+                        hapticWithFallback(HAPTIC.tap, event.currentTarget)
                       }}
 
                     >
