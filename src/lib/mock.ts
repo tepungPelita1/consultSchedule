@@ -216,7 +216,12 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
         const isClass = classes.some(
           (c) => c.day_of_week === day && overlaps(start, end, c.start_time, c.end_time),
         )
-        const booking = bookings.find((b) => b.day_of_week === day && b.slot_start === start)
+        const booking = bookings.find(
+          (b) =>
+            b.day_of_week === day &&
+            toMinutes(b.slot_start) < toMinutes(end) &&
+            toMinutes(b.slot_end) > toMinutes(start),
+        )
         const entry = booking
           ? getMockAllowlist().find((e) => e.student_id === booking.student_id)
           : undefined

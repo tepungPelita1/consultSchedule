@@ -32,6 +32,22 @@ function fmtTime(time: string): string {
   return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
+/** Emoji haiwan untuk avatar — ikut kedudukan baris supaya setiap pelajar berbeza. */
+const AVATARS = [
+  '🐱', '🐶', '🐼', '🦊', '🐯', '🐨', '🐵', '🐸',
+  '🐰', '🐻', '🦁', '🐧', '🐢', '🦉', '🐙', '🦄',
+]
+
+/** Ikon khas ikut student_id (override senarai haiwan). */
+const AVATAR_OVERRIDES: Record<string, string> = {
+  '2025229096': '👑', // SHU — Norshuaizam (crown/king)
+  '2025228256': '🐹', // BQS — Balqis
+}
+
+function avatarFor(studentId: string, index: number): string {
+  return AVATAR_OVERRIDES[studentId] ?? AVATARS[index % AVATARS.length]
+}
+
 interface MadamPanelProps {
   weekStart: string
   pin: string
@@ -178,9 +194,14 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
                 </tr>
               </thead>
               <tbody>
-                {allowlist.data.map((entry) => (
+                {allowlist.data.map((entry, index) => (
                   <tr key={entry.id}>
-                    <td>{entry.full_name || entry.name}</td>
+                    <td>
+                      <span className="who">
+                        <span className="avatar">{avatarFor(entry.student_id, index)}</span>
+                        <span>{entry.full_name || entry.name}</span>
+                      </span>
+                    </td>
                     <td>{entry.student_id}</td>
                   </tr>
                 ))}

@@ -344,10 +344,36 @@ function WeekTimeline({
           const madamClasses = dayClasses.filter((c) => c.owner !== 'student')
           const studentClasses = dayClasses.filter((c) => c.owner === 'student')
           const twoLane = madamClasses.length > 0 && studentClasses.length > 0
-          const bookedSlots = slots.filter(
-            (s) =>
-              s.day_of_week === day && (s.status === 'pending' || s.status === 'approved'),
-          )
+          // Gabungkan slot tempahan berturutan (julat) jadi satu blok.
+          const bookedGroups: {
+            key: string
+            start: string
+            end: string
+            status: 'pending' | 'approved'
+            student_full_name: string | null
+            mode: WeekSlot['mode']
+            slot: WeekSlot
+          }[] = []
+          for (const s of slots) {
+            if (s.day_of_week !== day || (s.status !== 'pending' && s.status !== 'approved')) {
+              continue
+            }
+            const key = s.booking_id ?? s.slot_start
+            const last = bookedGroups[bookedGroups.length - 1]
+            if (last && last.key === key && last.end === s.slot_start) {
+              last.end = s.slot_end
+            } else {
+              bookedGroups.push({
+                key,
+                start: s.slot_start,
+                end: s.slot_end,
+                status: s.status as 'pending' | 'approved',
+                student_full_name: s.student_full_name,
+                mode: s.mode,
+                slot: s,
+              })
+            }
+          }
           const freeSlots = slots.filter(
             (s) => s.day_of_week === day && s.status === 'available',
           )
@@ -431,14 +457,21 @@ function WeekTimeline({
                   )
                 })}
 
-                {bookedSlots.map((slot) => {
-                  const left = pct(toMinutes(slot.slot_start))
-                  const pending = slot.status === 'pending'
+                {bookedGroups.map((group) => {
+                  const left = pct(toMinutes(group.start))
+                  const width = widthPct(toMinutes(group.end) - toMinutes(group.start))
+                  const pending = group.status === 'pending'
+                  const title = group.student_full_name || group.slot.student_name || '—'
+                  const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}${
+                    group.mode
+                      ? ` · ${t(group.mode === 'online' ? 'online' : 'inperson')}`
+                      : ''
+                  }`
                   const content = (
                     <>
-                      <b>{slot.student_name ?? t(pending ? 'statusPending' : 'statusApproved')}</b>
+                      <b>{group.slot.student_name ?? t(pending ? 'statusPending' : 'statusApproved')}</b>
                       <span className="meta">
-                        {fmtTime12(slot.slot_start)}
+                        {fmtTime12(group.start)}
                         {pending ? ` · ${t('statusPending')}` : ' ✓'}
                       </span>
                     </>
@@ -446,30 +479,12 @@ function WeekTimeline({
                   if (madamMode) {
                     return (
                       <div
-                        key={slot.booking_id ?? `${slot.slot_start}`}
+                        key={group.key}
                         className={cn('blk', pending ? 'booked-pending' : 'booked')}
-                        style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
-                        aria-label={`${slot.student_full_name || slot.student_name || ''} ${fmtTime12(slot.slot_start)}`}
-                        onPointerEnter={(event) =>
-                          showTip(event, {
-                            title: slot.student_full_name || slot.student_name || '—',
-                            detail: `${fmtTime12(slot.slot_start)}${
-                              slot.mode
-                                ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
-                                : ''
-                            }`,
-                          })
-                        }
-                        onPointerUp={(event) =>
-                          toggleTip(event, {
-                            title: slot.student_full_name || slot.student_name || '—',
-                            detail: `${fmtTime12(slot.slot_start)}${
-                              slot.mode
-                                ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
-                                : ''
-                            }`,
-                          })
-                        }
+                        style={{ left: `${left}%`, width: `${width}%` }}
+                        aria-label={`${title} ${fmtTime12(group.start)}`}
+                        onPointerEnter={(event) => showTip(event, { title, detail })}
+                        onPointerUp={(event) => toggleTip(event, { title, detail })}
                         onPointerLeave={() => setTip(null)}
                       >
                         {content}
@@ -478,22 +493,13 @@ function WeekTimeline({
                   }
                   return (
                     <button
-                      key={slot.booking_id ?? `${slot.slot_start}`}
+                      key={group.key}
                       type="button"
                       className={cn('blk', pending ? 'booked-pending' : 'booked')}
-                      style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
-                      aria-label={`${slot.student_full_name || slot.student_name || ''} ${fmtTime12(slot.slot_start)}`}
-                      onClick={() => onCancelBooking(slot)}
-                      onPointerEnter={(event) =>
-                        showTip(event, {
-                          title: slot.student_full_name || slot.student_name || '—',
-                          detail: `${fmtTime12(slot.slot_start)}${
-                            slot.mode
-                              ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
-                              : ''
-                          }`,
-                        })
-                      }
+                      style={{ left: `${left}%`, width: `${width}%` }}
+                      aria-label={`${title} ${fmtTime12(group.start)}`}
+                      onClick={() => onCancelBooking(group.slot)}
+                      onPointerEnter={(event) => showTip(event, { title, detail })}
                       onPointerLeave={() => setTip(null)}
                     >
                       {content}

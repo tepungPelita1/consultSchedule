@@ -15,9 +15,9 @@ Single-page consultation scheduler (React 19 + Vite + TS + Tailwind v4, Supabase
 
 - Dual-mode: with `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (copy `.env.example` → `.env`) calls hit real Supabase RPCs; without them `src/lib/mock.ts` serves demo data with fake delays. `isSupabaseConfigured` in `src/lib/supabase.ts` is the gate — every hook in `src/lib/useSchedule.ts` branches on it. Add new data operations in BOTH branches.
 - All DB access goes through RPCs, not raw table writes (`book_slot`, `set_booking_status`, `add/remove_allowlist`, `add/remove_extra_class_block`). RPCs raise error codes as exception messages: `NOT_ALLOWLISTED`, `WRONG_WEEK`, `CLASS_TIME`, `SLOT_TAKEN`, `DAILY_LIMIT`, `OUT_OF_HOURS`, `INVALID_SLOT_LENGTH`.
-- SQL lives in `supabase/migrations/`: run `0001_init.sql` then `0002_class_blocks.sql` then `supabase/seed.sql` (Supabase SQL Editor or `supabase db push`). 0002 REDEFINES `get_week_slots` and `book_slot` — the 0002 versions are the live ones (week_start-aware extra classes); don't re-run 0001's definitions expecting them to stick.
+- SQL lives in `supabase/migrations/`: run `0001` → `0008` in order, then `supabase/seed.sql` (Supabase SQL Editor or `supabase db push`). Later migrations REDEFINE earlier functions — e.g. `0003` is the live `book_slot`, `0006` the live `get_week_slots`, `0008` the live range-capable `book_slot`/`get_week_slots`; don't re-run older definitions expecting them to stick.
 - Business rules enforced server-side: max 1 active booking/day/student (`bookings_active_unique` partial index), current-week only, 30-min slots exactly, 08:00–18:00, slots overlap-free against `class_blocks`.
-- Known gap: UI lets students drag a multi-slot range (`useBookRange`), but `book_slot` RPC accepts exactly 30 min and only the first slot of the range is booked. Backend needs a range-capable RPC before this works fully.
+- Range booking: students drag a multi-slot range (`useBookRange`). `book_slot` (redefined in `0008_range_booking.sql`) accepts any positive multiple of 30 min and stores it as ONE booking row; `get_week_slots` marks every covered 30-min slot. Max 1 active booking/day/student still applies.
 
 ## Conventions
 

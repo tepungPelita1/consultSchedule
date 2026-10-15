@@ -708,43 +708,56 @@ button {
   color: #fff;
 }
 
-/* Jadual senarai pelajar seliaan — gaya folder-card, kemas */
+/* Senarai pelajar seliaan — gaya inset group bersih (iOS-like) */
 .supervisee {
-  border: 1px solid var(--ink);
-  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 14px;
   overflow: hidden;
   background: var(--card);
-  box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 18%, transparent);
 }
 .supervisee table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
-.supervisee th {
-  background: var(--teal);
-  color: #fff;
+.supervisee thead th {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
   text-align: left;
   font-weight: 600;
   font-size: 11px;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 8px 12px;
+  padding: 8px 14px;
 }
-.supervisee td {
-  padding: 9px 12px;
-  border-top: 1px solid color-mix(in srgb, var(--teal) 22%, transparent);
-}
-.supervisee tbody tr:nth-child(odd) {
-  background: color-mix(in srgb, var(--lgreen) 55%, transparent);
+.supervisee tbody td {
+  padding: 9px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .supervisee tbody tr:hover {
-  background: color-mix(in srgb, var(--teal) 16%, transparent);
+  background: color-mix(in srgb, var(--teal) 8%, transparent);
+}
+.supervisee .who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.supervisee .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  font-size: 16px;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 .supervisee th:last-child,
 .supervisee td:last-child {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
 }
 
 /* ------------------------------------------------------------------ *
