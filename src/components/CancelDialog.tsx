@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
-import { useI18n } from '@/lib/i18n'
+import { interpolate, useI18n } from '@/lib/i18n'
+import { formatCountdown, isLocked, recordFail, remainingMs, resetLimit, useLockCountdown } from '@/lib/rateLimit'
 import { useCancelBooking } from '@/lib/useSchedule'
 import { cn, errorText } from '@/lib/utils'
 import type { WeekSlot, Weekday } from '@/lib/types'
@@ -58,6 +59,7 @@ function CancelDialogBody({
   const { t } = useI18n()
   const cancelBooking = useCancelBooking(weekStart)
   const [sent, setSent] = useState(false)
+  const { locked, text } = useLockCountdown('student')
 
   const {
     register,
@@ -83,18 +85,32 @@ function CancelDialogBody({
   const timeLabel = `${fmtTime(slot.slot_start)}`
 
   const onSubmit = handleSubmit(async (values) => {
+    if (locked) return
     try {
       await cancelBooking.mutateAsync({
         bookingId: slot.booking_id ?? '',
         studentId: values.studentId,
       })
       setSent(true)
+      resetLimit('student')
       haptic(HAPTIC.action)
       toast.success(t('cancelled'))
     } catch (err) {
       const message = errorText(err)
       console.error('[cancel_booking]', err)
-      toast.error(t(errorMessageKey(message)))
+      const isWrong =
+        message.toUpperCase().includes('NOT_YOUR_BOOKING') ||
+        message.toUpperCase().includes('BOOKING_NOT_FOUND')
+      if (isWrong) {
+        recordFail('student', 3, 5 * 60 * 1000)
+        if (isLocked('student')) {
+          toast.error(interpolate(t('rateLimitedStudent'), { time: formatCountdown(remainingMs('student')) }))
+        } else {
+          toast.error(t(errorMessageKey(message)))
+        }
+      } else {
+        toast.error(t(errorMessageKey(message)))
+      }
     }
   })
 
@@ -152,11 +168,17 @@ function CancelDialogBody({
                   placeholder={t('studentIdPlaceholder')}
                   autoFocus
                   maxLength={10}
+                  disabled={locked}
                   className={cn(errors.studentId && 'border-red')}
                 />
                 {errors.studentId && (
                   <span className="meta" style={{ color: '#E5533D' }}>
                     {t('invalidStudentId')}
+                  </span>
+                )}
+                {locked && (
+                  <span className="meta" style={{ display: 'block', marginTop: 6, color: '#E5533D' }}>
+                    {interpolate(t('rateLimitedStudent'), { time: text })}
                   </span>
                 )}
               </label>
@@ -168,7 +190,7 @@ function CancelDialogBody({
                 <button
                   type="submit"
                   className="pill ok"
-                  disabled={cancelBooking.isPending}
+                  disabled={cancelBooking.isPending || locked}
                   onClick={(event) => hapticWithFallback(HAPTIC.action, event.currentTarget)}
                 >
                   {cancelBooking.isPending ? t('loading') : t('cancelConfirm')}

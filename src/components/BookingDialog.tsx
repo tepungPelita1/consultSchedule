@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
-import { useI18n } from '@/lib/i18n'
+import { interpolate, useI18n } from '@/lib/i18n'
+import { formatCountdown, isLocked, recordFail, remainingMs, resetLimit, useLockCountdown } from '@/lib/rateLimit'
 import { useBookRange } from '@/lib/useSchedule'
 import { cn, errorText } from '@/lib/utils'
 import type { FreeBlock, Weekday } from '@/lib/types'
@@ -62,6 +63,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
   const { t } = useI18n()
   const bookRange = useBookRange(weekStart)
   const [sent, setSent] = useState(false)
+  const { locked, text } = useLockCountdown('student')
 
   const {
     register,
@@ -87,6 +89,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
   const timeRange = `${fmtTime(block.start)} – ${fmtTime(block.end)}`
 
   const onSubmit = handleSubmit(async (values) => {
+    if (locked) return
     try {
       await bookRange.mutateAsync({
         day_of_week: block.day_of_week,
@@ -96,12 +99,22 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
         mode: values.mode,
       })
       setSent(true)
+      resetLimit('student')
       haptic(HAPTIC.action)
       toast.success(t('bookingSent'))
     } catch (err) {
       const message = errorText(err)
       console.error('[book_slot]', err)
-      toast.error(t(errorMessageKey(message)))
+      if (message.toUpperCase().includes('NOT_ALLOWLISTED')) {
+        recordFail('student', 3, 5 * 60 * 1000)
+        if (isLocked('student')) {
+          toast.error(interpolate(t('rateLimitedStudent'), { time: formatCountdown(remainingMs('student')) }))
+        } else {
+          toast.error(t('notAllowlisted'))
+        }
+      } else {
+        toast.error(t(errorMessageKey(message)))
+      }
     }
   })
 
@@ -153,6 +166,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                   placeholder={t('studentIdPlaceholder')}
                   autoFocus
                   maxLength={10}
+                  disabled={locked}
                   className={cn(errors.studentId && 'border-red')}
                 />
                 <span className="meta" style={{ display: 'block', marginTop: 4, opacity: 0.7 }}>
@@ -161,6 +175,11 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                 {errors.studentId && (
                   <span className="meta" style={{ color: '#E5533D' }}>
                     {t('invalidStudentId')}
+                  </span>
+                )}
+                {locked && (
+                  <span className="meta" style={{ display: 'block', marginTop: 6, color: '#E5533D' }}>
+                    {interpolate(t('rateLimitedStudent'), { time: text })}
                   </span>
                 )}
               </label>
@@ -204,7 +223,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                 <button
                   type="submit"
                   className="pill ok"
-                  disabled={bookRange.isPending}
+                  disabled={bookRange.isPending || locked}
                   onClick={(event) => hapticWithFallback(HAPTIC.action, event.currentTarget)}
                 >
                   {bookRange.isPending ? t('loading') : t('submit')}

@@ -227,6 +227,35 @@ button {
 .cat {
   width: 100%;
   height: auto;
+  transform-origin: 50% 80%;
+  transition: transform 0.2s ease;
+}
+
+.cat-btn:active .cat {
+  animation: cat-pop 420ms ease;
+}
+
+@keyframes cat-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.9) rotate(-4deg);
+  }
+  70% {
+    transform: scale(1.06) rotate(2deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease,
+    fill 400ms ease, stroke 400ms ease !important;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1010,5 +1039,14 @@ button {
   .pill,
   .free {
     transition: none;
+  }
+  html.theme-switching,
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
+  }
+  .cat-btn:active .cat {
+    animation: none;
   }
 }
