@@ -44,8 +44,8 @@ const WORK_END = 18 * 60
 const WORK_DURATION = WORK_END - WORK_START
 
 // Sentuh: tempoh tahan untuk masuk mod slide, dan jarak masa double tap.
-const LONG_PRESS_MS = 3000
-const DOUBLE_TAP_MS = 350
+const LONG_PRESS_MS = 1500
+const DOUBLE_TAP_MS = 500
 
 const pct = (minutes: number): number => ((minutes - WORK_START) / WORK_DURATION) * 100
 const widthPct = (duration: number): number => (duration / WORK_DURATION) * 100
@@ -247,7 +247,9 @@ function WeekTimeline({
       onAddExtra(slot)
       return
     }
-    setDrag({ day: slot.day_of_week, anchor: slot.slot_start, current: slot.slot_start })
+    const state = { day: slot.day_of_week, anchor: slot.slot_start, current: slot.slot_start }
+    dragRef.current = state
+    setDrag(state)
   }
 
   const extendDrag = (slot: WeekSlot) => {
@@ -489,7 +491,11 @@ function WeekTimeline({
                       data-slot={slot.slot_start}
                       aria-label={`${t('bookSlot')} ${slot.slot_start}`}
                       onPointerDown={(event) => {
-                        event.currentTarget.releasePointerCapture(event.pointerId)
+                        try {
+                          event.currentTarget.releasePointerCapture(event.pointerId)
+                        } catch {
+                          // Sesetengah browser Safari sentuh tak ada implicit capture — teruskan.
+                        }
                         if (event.pointerType !== 'touch') {
                           startDrag(slot)
                           return
@@ -529,7 +535,9 @@ function WeekTimeline({
                             onAddExtra(slot)
                             return
                           }
-                          setDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
+                          const state = { day, anchor: slot.slot_start, current: slot.slot_start }
+                          dragRef.current = state
+                          setDrag(state)
                         }, LONG_PRESS_MS)
                       }}
                       onPointerEnter={(event) => {
