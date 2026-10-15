@@ -314,6 +314,7 @@ button {
 
 /* hour header: 20 kolum, label hanya pada permulaan jam */
 .hrs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(20, 1fr);
 }
@@ -326,6 +327,18 @@ button {
 
 .hrs span:first-child {
   border-left: 0;
+}
+
+/* Penanda hujung hari (6 PM) supaya band 5–6 PM jelas */
+.hrs .end {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 0;
+  padding: 0;
+  opacity: 0.75;
+  pointer-events: none;
 }
 
 /* day track: relative, background grid lines each 5% (30 min) */
@@ -500,12 +513,9 @@ button {
   outline-offset: -2px;
 }
 
-/* Peranti sentuh tiada hover: tunjuk slot kosong supaya boleh ditekan/di-drag */
-@media (hover: none) {
-  .free {
-    color: var(--ink);
-    border-color: color-mix(in srgb, var(--ink) 25%, transparent);
-  }
+/* Peranti sentuh: tap pertama "arm" slot (tunjuk + sahaja, sama macam hover PC) */
+.free.armed {
+  color: var(--ink);
 }
 
 .trk {
@@ -631,7 +641,9 @@ button {
 /* ------------------------------------------------------------------ *
  * Responsive
  * ------------------------------------------------------------------ */
-@media (max-width: 560px) {
+/* Board scroll mendatar pada skrin sederhana supaya hujung timeline
+   (5–6 PM dan baris Jumaat) tak terpotong oleh overflow: hidden */
+@media (max-width: 760px) {
   .board {
     overflow-x: auto;
   }
@@ -639,6 +651,9 @@ button {
     width: auto;
     min-width: 720px;
   }
+}
+
+@media (max-width: 560px) {
   .row {
     grid-template-columns: 64px 1fr;
   }

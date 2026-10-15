@@ -137,6 +137,9 @@ function WeekTimeline({
   const [drag, setDrag] = useState<DragState | null>(null)
   const dragRef = useRef<DragState | null>(null)
 
+  // Peranti sentuh: tap pertama "arm" slot (tunjuk +), tap kedua baru tempah.
+  const [armed, setArmed] = useState<{ day: Weekday; slot_start: string } | null>(null)
+
   const [tip, setTip] = useState<{
     title: string
     detail: string
@@ -168,6 +171,22 @@ function WeekTimeline({
   useEffect(() => {
     dragRef.current = drag
   }, [drag])
+
+  // Buang "arm" selepas 5 saat, atau bila tekan di luar slot kosong.
+  useEffect(() => {
+    if (!armed) return
+    const timer = window.setTimeout(() => setArmed(null), 5000)
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('.blk.free')) return
+      setArmed(null)
+    }
+    window.addEventListener('pointerdown', onDown)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('pointerdown', onDown)
+    }
+  }, [armed])
 
   const isPast = (day: Weekday, start: string): boolean => {
     const date = addDays(monday, day - 1)
@@ -240,6 +259,9 @@ function WeekTimeline({
                 {ampm(8 + i / 2)}
               </span>
             ))}
+            <span className="meta end" aria-hidden="true">
+              6 PM
+            </span>
           </div>
         </div>
 
@@ -416,18 +438,31 @@ function WeekTimeline({
                   }
                   const selected =
                     range !== null && slot.slot_start >= range[0] && slot.slot_start <= range[1]
+                  const isArmed =
+                    armed !== null && armed.day === day && armed.slot_start === slot.slot_start
                   return (
                     <button
                       key={slot.slot_start}
                       type="button"
-                      className={cn('blk free', selected && 'drag-sel')}
+                      className={cn('blk free', selected && 'drag-sel', isArmed && 'armed')}
                       style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
                       aria-label={`${t('bookSlot')} ${slot.slot_start}`}
                       onPointerDown={(event) => {
                         event.currentTarget.releasePointerCapture(event.pointerId)
+                        if (event.pointerType === 'touch') {
+                          if (isArmed) {
+                            setArmed(null)
+                            startDrag(slot)
+                          } else {
+                            setArmed({ day, slot_start: slot.slot_start })
+                          }
+                          return
+                        }
                         startDrag(slot)
                       }}
-                      onPointerEnter={() => extendDrag(slot)}
+                      onPointerEnter={(event) => {
+                        if (event.pointerType !== 'touch') extendDrag(slot)
+                      }}
                     >
                       +
                     </button>
