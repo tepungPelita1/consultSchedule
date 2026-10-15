@@ -21,7 +21,21 @@ export function useTheme() {
     window.localStorage.setItem('theme', theme)
   }, [theme])
 
-  const toggle = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
+  const TRANSITION_CLASS = 'theme-switching'
+  const TRANSITION_DURATION = 460
+
+  const toggle = () => {
+    setTheme((t) => {
+      const next = t === 'light' ? 'dark' : 'light'
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.add(TRANSITION_CLASS)
+        window.setTimeout(() => {
+          document.documentElement.classList.remove(TRANSITION_CLASS)
+        }, TRANSITION_DURATION)
+      }
+      return next
+    })
+  }
 
   return { theme, toggle, isDark: theme === 'dark' }
 }
