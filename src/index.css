@@ -20,6 +20,8 @@
   --amber-light: #f6d0a8;
   --orange: #f26b3a;
   --peach: #f8d8ac;
+  --adhoc: #e0483a;
+  --adhoc-dark: #b8342a;
 
   --sans: 'Instrument Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
@@ -246,6 +248,13 @@ button {
 .sw.s {
   background: linear-gradient(90deg, #8fb8de, #9fd8a6, #c9a9e0, #ead98b);
 }
+.sw.ad {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--adhoc) 0 4px,
+    var(--adhoc-dark) 4px 8px
+  );
+}
 .sw.bp {
   background: color-mix(in srgb, var(--amber) 32%, transparent);
   border-style: dashed;
@@ -450,6 +459,15 @@ button {
 .kelas.std {
   color: var(--dark);
 }
+/* Kelas ad-hoc (minggu itu sahaja) — merah berjalur, beza dari kelas tetap */
+.kelas.extra {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--adhoc) 0 7px,
+    var(--adhoc-dark) 7px 14px
+  );
+  color: #fff;
+}
 .booked {
   background: var(--amber);
 }
@@ -547,6 +565,20 @@ button {
 .blk.free {
   user-select: none;
 }
+
+/* Fallback makhum balas bila getaran peranti tidak tersedia (cth. iOS) */
+.haptic-pulse {
+  animation: haptic-pulse 320ms ease-out;
+}
+@keyframes haptic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--orange) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
 .gone {
   opacity: 0.35;
   background: transparent;

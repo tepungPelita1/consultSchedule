@@ -68,7 +68,7 @@ function SchedulePage() {
           day_of_week: slot.day_of_week,
           start_time: slot.slot_start,
           end_time: slot.slot_end,
-          label: t('legendClass'),
+          label: t('adhocLabel'),
           venue: '',
           week_start: weekStart,
         },
@@ -120,6 +120,10 @@ function SchedulePage() {
             <span>
               <i className="sw s" />
               {t('legendStudent')}
+            </span>
+            <span>
+              <i className="sw ad" />
+              {t('legendAdhoc')}
             </span>
             <span>
               <i className="sw bp" />
