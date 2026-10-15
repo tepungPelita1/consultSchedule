@@ -24,6 +24,7 @@
   --adhoc-dark: #b8342a;
 
   --sans: 'Instrument Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Space Grotesk', 'Instrument Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -145,6 +146,7 @@ button {
 
 .title {
   margin: 14px 0 0;
+  font-family: var(--display);
   font-size: clamp(2rem, 7vw, 3.4rem);
   line-height: 1;
   font-weight: 500;
@@ -205,11 +207,26 @@ button {
   color: inherit;
 }
 
-.cat {
+.cat-btn {
   position: absolute;
   right: 22px;
   top: 30px;
   width: 84px;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 0;
+}
+.cat-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.cat {
+  width: 100%;
+  height: auto;
 }
 
 /* ------------------------------------------------------------------ *
@@ -272,7 +289,7 @@ button {
   border-style: dashed;
 }
 .sw.b {
-  background: var(--green);
+  background: var(--teal);
 }
 
 /* ------------------------------------------------------------------ *
@@ -488,7 +505,7 @@ button {
   color: #fff;
 }
 .booked {
-  background: var(--green);
+  background: var(--teal);
 }
 .booked-pending {
   background: color-mix(in srgb, var(--amber) 32%, transparent);
@@ -844,9 +861,9 @@ button {
   background: color-mix(in srgb, var(--amber) 22%, transparent);
 }
 .madam-badge.is-approved {
-  border-color: var(--green);
-  color: #2f6b3c;
-  background: color-mix(in srgb, var(--green) 16%, transparent);
+  border-color: var(--teal);
+  color: #205d6b;
+  background: color-mix(in srgb, var(--teal) 16%, transparent);
 }
 .madam-badge.is-rejected {
   border-color: var(--adhoc);
@@ -952,7 +969,7 @@ button {
   .row {
     grid-template-columns: 64px 1fr;
   }
-  .cat {
+  .cat-btn {
     width: 64px;
     right: 16px;
   }

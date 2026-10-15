@@ -5,6 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { interpolate, useI18n } from '@/lib/i18n'
+import { useTheme } from '@/lib/useTheme'
 import { cn, weekNumber } from '@/lib/utils'
 import type { ClassBlock, FreeBlock, WeekSlot, Weekday } from '@/lib/types'
 import { Cat } from './illustrations'
@@ -80,6 +81,7 @@ interface FolderHeaderProps {
 
 function FolderHeader({ weekStart, canPrev, canNext, onPrev, onNext, onToday }: FolderHeaderProps) {
   const { t, lang } = useI18n()
+  const { toggle } = useTheme()
   const locale = lang === 'ms' ? msLocale : enUS
   const monday = parseISO(weekStart)
   const title = format(monday, 'MMMM yyyy', { locale })
@@ -89,7 +91,15 @@ function FolderHeader({ weekStart, canPrev, canNext, onPrev, onNext, onToday }: 
     <header className="folder">
       <div className="fin" style={{ ['--c' as string]: 'var(--yellow)' }}>
         <span className="sq" />
-        <Cat className="cat" />
+        <button
+          type="button"
+          className="cat-btn"
+          onClick={toggle}
+          aria-label={t('toggleTheme')}
+          title={t('toggleTheme')}
+        >
+          <Cat className="cat" />
+        </button>
         <h1 className="title">{title}</h1>
         <div className="hbot">
           <span className="meta">{t('headerMeta')}</span>

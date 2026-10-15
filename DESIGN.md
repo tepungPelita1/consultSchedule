@@ -29,7 +29,8 @@ Prinsip: **senang dibaca dulu**. Tiada tekstur grain, tiada garisan bergoyang, t
 Teks di atas warna pastel sentiasa `#1B1B1B` (tetap, walaupun dark mode).
 
 ## 4. Tipografi
-- Font: **Instrument Sans** (400/500/600), fallback Inter, system-ui.
+- Font body: **Instrument Sans** (400/500/600), fallback Inter, system-ui.
+- Font tajuk bulan: **Space Grotesk** (500/600), fallback Instrument Sans — nampak “zine” tapi masih bersih.
 - Tajuk bulan: 500, `letter-spacing:-0.035em`, `clamp(2rem,7vw,3.4rem)`.
 - Label (hari, jam, tarikh kecil): 11px, UPPERCASE, `letter-spacing:.09em`, 500.
 - Nama dalam blok: 15px, 500.
@@ -82,7 +83,7 @@ Blok: border 1px, radius 6px, padding 8px 9px, nama atas / masa kecil bawah.
 3. **Allowlist**: pelajar mesti wujud dalam `allowlist` (studentID) untuk tempah.
 4. **Mod madam** (checkbox di halaman utama, menggantikan `/admin`): approve/reject, tambah/buang kelas tambahan, urus senarai pelajar.
 5. **i18n**: toggle EN ⇄ BM.
-6. **Dark mode**: `prefers-color-scheme` + `data-theme`.
+6. **Dark mode**: `prefers-color-scheme` + `data-theme`; toggle dengan klik ikon kucing (warna kucing & jadual berubah).
 7. Kelas di-render dengan kod subjek + tempat (venue) dari `class_blocks`.
 
 ## 10. Teknikal
