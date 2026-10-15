@@ -331,12 +331,17 @@ button {
 /* day track: relative, background grid lines each 5% (30 min) */
 .trk {
   position: relative;
-  height: 96px;
+  height: 53px; /* 1 lane: 7 + 39 + 7 */
   background: repeating-linear-gradient(
     90deg,
     transparent 0 calc(5% - 1px),
     color-mix(in srgb, var(--ink) 10%, transparent) calc(5% - 1px) 5%
   );
+}
+
+/* 2 lane (Madam + pelajar) kekal tinggi asal staging */
+.trk.two-lane {
+  height: 96px;
 }
 
 .trk .blk {
@@ -362,6 +367,17 @@ button {
 }
 .blk.lane-top b,
 .blk.lane-bottom b {
+  font-size: 13px;
+}
+
+/* Kad kelas: tinggi tetap 39px supaya hari 1 lane (Jumaat) tak meregang */
+.trk .blk.kelas {
+  bottom: auto;
+  height: 39px;
+  padding: 4px 7px;
+  gap: 1px;
+}
+.trk .blk.kelas b {
   font-size: 13px;
 }
 
@@ -448,7 +464,9 @@ button {
   padding: 6px 9px;
   font-size: 12px;
   line-height: 1.3;
-  white-space: nowrap;
+  max-width: min(260px, 80vw);
+  white-space: normal;
+  overflow-wrap: anywhere;
   transform: translate(-50%, calc(-100% - 10px));
 }
 .slot-tip b {
@@ -468,6 +486,7 @@ button {
   color: transparent;
   border-color: transparent;
   transition: color 0.12s;
+  touch-action: pan-y;
 }
 .free:hover,
 .free:active {
@@ -479,6 +498,14 @@ button {
   background: color-mix(in srgb, var(--lgreen) 40%, transparent);
   outline: 2px solid var(--green);
   outline-offset: -2px;
+}
+
+/* Peranti sentuh tiada hover: tunjuk slot kosong supaya boleh ditekan/di-drag */
+@media (hover: none) {
+  .free {
+    color: var(--ink);
+    border-color: color-mix(in srgb, var(--ink) 25%, transparent);
+  }
 }
 
 .trk {
@@ -630,9 +657,6 @@ button {
   }
   .sq {
     left: 16px;
-  }
-  .trk {
-    height: 84px;
   }
   .hrs span {
     font-size: 10px;

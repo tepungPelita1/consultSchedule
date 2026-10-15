@@ -92,6 +92,12 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
 
   const pending = bookings.data?.filter((b) => b.status === 'pending') ?? []
 
+  const fullNameById = new Map(
+    (allowlist.data ?? []).map((entry) => [entry.student_id, entry.full_name]),
+  )
+  const displayName = (booking: Booking) =>
+    fullNameById.get(booking.student_id) || booking.student_name
+
   return (
     <div className="madmam-panel">
       {/* Tempahan menunggu */}
@@ -107,7 +113,7 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
               <div key={booking.id} className="madmam-row">
                 <div>
                   <b style={{ fontWeight: 500 }}>
-                    {booking.student_name} <span className="meta">({booking.student_id})</span>
+                    {displayName(booking)} <span className="meta">({booking.student_id})</span>
                   </b>
                   <div className="meta">
                     {t(DAY_FULL[booking.day_of_week])} · {fmtTime(booking.slot_start)} ·{' '}
