@@ -402,14 +402,18 @@ function WeekTimeline({
               </div>
               <div className={cn('trk', twoLane && 'two-lane')}>
                 {[
-                  ...madamClasses.map((block) => ({ block, student: false })),
+                  // Kelas tetap dulu, kemudian kelas tambahan supaya ad-hoc
+                  // (merah berjalur) terpapar penuh di atas lane sedia ada.
+                  ...madamClasses.filter((b) => b.week_start == null).map((block) => ({ block, student: false })),
                   ...studentClasses.map((block) => ({ block, student: true })),
+                  ...madamClasses.filter((b) => b.week_start != null).map((block) => ({ block, student: false })),
                 ].map(({ block, student }) => {
                   const left = pct(toMinutes(block.start_time))
                   const width = widthPct(toMinutes(block.end_time) - toMinutes(block.start_time))
                   const isAdhoc = block.week_start != null
                   const canRemove = isAdhoc && madamMode
-                  const laneClass = twoLane ? (student ? 'lane-bottom' : 'lane-top') : undefined
+                  // Kelas tambahan penuh rentas track; kelas tetap kekal dalam lane.
+                  const laneClass = isAdhoc ? undefined : twoLane ? (student ? 'lane-bottom' : 'lane-top') : undefined
 
                   const style = {
                     left: `${left}%`,
