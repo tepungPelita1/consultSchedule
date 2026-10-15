@@ -500,6 +500,7 @@ button {
   border-color: transparent;
   transition: color 0.12s;
   touch-action: pan-y;
+  -webkit-touch-callout: none;
 }
 .free:hover,
 .free:active {
