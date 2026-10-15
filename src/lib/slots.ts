@@ -2,21 +2,27 @@ import { addDays, format, parseISO } from 'date-fns'
 import { supabase } from './supabase'
 import type { AllowlistEntry, Booking, BookingMode, ClassBlock, WeekSlot, Weekday } from './types'
 
-/**
- * "Sekarang" mengikut zon waktu Asia/Kuala_Lumpur, dibina sebagai Date
- * waktu-tempatan supaya getDay() ikut hari kalendar KL (selaras dgn server).
- */
-function klNow(): Date {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }))
+/** Tarikh (tahun, bulan, hari) mengikut zon waktu Asia/Kuala_Lumpur. */
+function klDateParts(): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const get = (type: 'year' | 'month' | 'day') =>
+    Number(parts.find((part) => part.type === type)?.value ?? '0')
+  return { year: get('year'), month: get('month'), day: get('day') }
 }
 
-// Isnin minggu semasa (format YYYY-MM-DD) — soft reset: paparan ikut minggu ini sahaja.
+// Isnin minggu semasa (format YYYY-MM-DD) mengikut Asia/Kuala_Lumpur.
+// Guna tengah hari untuk elak sebarang isu offset; kita cuma perlukan weekday.
 export function getCurrentWeekStart(): string {
-  const now = klNow()
-  const day = (now.getDay() + 6) % 7 // Mon=0 ... Sun=6
-  const monday = new Date(now)
-  monday.setDate(now.getDate() - day)
-  return format(monday, 'yyyy-MM-dd')
+  const { year, month, day } = klDateParts()
+  const base = new Date(year, month - 1, day, 12)
+  const offset = (base.getDay() + 6) % 7 // Mon=0 ... Sun=6
+  base.setDate(base.getDate() - offset)
+  return format(base, 'yyyy-MM-dd')
 }
 
 /** Bilangan minggu ke hadapan yang dibuka untuk prebooking (selain minggu semasa). */
