@@ -193,6 +193,18 @@ button {
   color: var(--yellow);
 }
 
+.pill:disabled,
+.fin .pill:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pill:disabled:hover,
+.fin .pill:disabled:hover {
+  background: none;
+  color: inherit;
+}
+
 .cat {
   position: absolute;
   right: 22px;
@@ -706,6 +718,160 @@ button {
 .pill.danger:hover {
   background: var(--adhoc);
   color: #fff;
+}
+
+/* Tab minggu (Mod madam): hanya minggu yang ada tempahan */
+.madam-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.madam-tabs .pill.active {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+.madam-tabs .pill.active:hover {
+  background: var(--dark);
+  color: #fff;
+}
+
+/* Tajuk seksyen + kiraan tempahan */
+.madam-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Grid kad tempahan: 2 kolum, jadi 1 kolum pada skrin kecil */
+.madam-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.madam-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+/* Kad pending diutamakan secara visual */
+.madam-card.is-pending {
+  border-color: color-mix(in srgb, var(--amber) 60%, transparent);
+  background: color-mix(in srgb, var(--amber) 8%, var(--card));
+}
+
+.madam-card-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.madam-card .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  font-size: 16px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.madam-card-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.madam-card-who b {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.madam-card-who .meta {
+  opacity: 0.6;
+}
+
+.madam-card-meta {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.madam-card-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.madam-card-acts .pill {
+  flex: 1;
+  text-align: center;
+}
+
+/* Lencana status booking */
+.madam-badge {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.madam-badge.is-pending {
+  border-color: var(--amber);
+  color: #8a5a1a;
+  background: color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.madam-badge.is-approved {
+  border-color: var(--green);
+  color: #2f6b3c;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+}
+.madam-badge.is-rejected {
+  border-color: var(--adhoc);
+  color: var(--adhoc);
+  background: color-mix(in srgb, var(--adhoc) 12%, transparent);
+}
+
+/* Approve / Reject — warna jelas */
+.pill.approve {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.pill.approve:hover {
+  background: color-mix(in srgb, var(--green) 82%, black);
+  border-color: color-mix(in srgb, var(--green) 82%, black);
+  color: #fff;
+}
+.pill.reject {
+  border-color: var(--adhoc);
+  color: var(--adhoc);
+}
+.pill.reject:hover {
+  background: var(--adhoc);
+  border-color: var(--adhoc);
+  color: #fff;
+}
+
+@media (max-width: 560px) {
+  .madam-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Senarai pelajar seliaan — gaya inset group bersih (iOS-like) */
