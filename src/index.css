@@ -272,7 +272,7 @@ button {
   border-style: dashed;
 }
 .sw.b {
-  background: var(--amber);
+  background: var(--green);
 }
 
 /* ------------------------------------------------------------------ *
@@ -481,7 +481,7 @@ button {
   color: #fff;
 }
 .booked {
-  background: var(--amber);
+  background: var(--green);
 }
 .booked-pending {
   background: color-mix(in srgb, var(--amber) 32%, transparent);
