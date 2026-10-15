@@ -209,9 +209,9 @@ button {
 
 .cat-btn {
   position: absolute;
-  right: 22px;
-  top: 30px;
-  width: 84px;
+  right: 20px;
+  top: 48px;
+  width: 105px;
   padding: 0;
   margin: 0;
   background: none;
@@ -970,8 +970,9 @@ button {
     grid-template-columns: 64px 1fr;
   }
   .cat-btn {
-    width: 64px;
-    right: 16px;
+    width: 80px;
+    right: 14px;
+    top: 38px;
   }
   .dl b {
     font-size: 19px;
