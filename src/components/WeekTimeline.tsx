@@ -152,6 +152,19 @@ function WeekTimeline({
     setTip({ ...data, x: event.clientX, y: event.clientY })
   }
 
+  // Peranti sentuh: tap untuk tunjuk/mati tooltip nama penuh.
+  const toggleTip = (
+    event: ReactPointerEvent,
+    data: { title: string; detail: string },
+  ) => {
+    if (event.pointerType === 'mouse') return
+    setTip((current) =>
+      current && current.title === data.title && current.detail === data.detail
+        ? null
+        : { ...data, x: event.clientX, y: event.clientY },
+    )
+  }
+
   useEffect(() => {
     dragRef.current = drag
   }, [drag])
@@ -199,8 +212,13 @@ function WeekTimeline({
       })
       setDrag(null)
     }
-    window.addEventListener('mouseup', finish)
-    return () => window.removeEventListener('mouseup', finish)
+    const cancel = () => setDrag(null)
+    window.addEventListener('pointerup', finish)
+    window.addEventListener('pointercancel', cancel)
+    return () => {
+      window.removeEventListener('pointerup', finish)
+      window.removeEventListener('pointercancel', cancel)
+    }
   }, [onBook])
 
   const dragRange = (day: Weekday): [string, string] | null => {
@@ -249,7 +267,7 @@ function WeekTimeline({
                 <span className="meta">{t(DAY_SHORT[day])}</span>
                 <b>{getDate(date)}</b>
               </div>
-              <div className="trk">
+              <div className={cn('trk', twoLane && 'two-lane')}>
                 {[
                   ...madamClasses.map((block) => ({ block, student: false })),
                   ...studentClasses.map((block) => ({ block, student: true })),
@@ -332,10 +350,20 @@ function WeekTimeline({
                         key={slot.booking_id ?? `${slot.slot_start}`}
                         className={cn('blk', pending ? 'booked-pending' : 'booked')}
                         style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
-                        aria-label={`${slot.student_name ?? ''} ${fmtTime12(slot.slot_start)}`}
+                        aria-label={`${slot.student_full_name || slot.student_name || ''} ${fmtTime12(slot.slot_start)}`}
                         onPointerEnter={(event) =>
                           showTip(event, {
-                            title: slot.student_name ?? '—',
+                            title: slot.student_full_name || slot.student_name || '—',
+                            detail: `${fmtTime12(slot.slot_start)}${
+                              slot.mode
+                                ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
+                                : ''
+                            }`,
+                          })
+                        }
+                        onPointerUp={(event) =>
+                          toggleTip(event, {
+                            title: slot.student_full_name || slot.student_name || '—',
                             detail: `${fmtTime12(slot.slot_start)}${
                               slot.mode
                                 ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
@@ -355,11 +383,11 @@ function WeekTimeline({
                       type="button"
                       className={cn('blk', pending ? 'booked-pending' : 'booked')}
                       style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
-                      aria-label={`${slot.student_name ?? ''} ${fmtTime12(slot.slot_start)}`}
+                      aria-label={`${slot.student_full_name || slot.student_name || ''} ${fmtTime12(slot.slot_start)}`}
                       onClick={() => onCancelBooking(slot)}
                       onPointerEnter={(event) =>
                         showTip(event, {
-                          title: slot.student_name ?? '—',
+                          title: slot.student_full_name || slot.student_name || '—',
                           detail: `${fmtTime12(slot.slot_start)}${
                             slot.mode
                               ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}`
@@ -395,8 +423,11 @@ function WeekTimeline({
                       className={cn('blk free', selected && 'drag-sel')}
                       style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
                       aria-label={`${t('bookSlot')} ${slot.slot_start}`}
-                      onMouseDown={() => startDrag(slot)}
-                      onMouseEnter={() => extendDrag(slot)}
+                      onPointerDown={(event) => {
+                        event.currentTarget.releasePointerCapture(event.pointerId)
+                        startDrag(slot)
+                      }}
+                      onPointerEnter={() => extendDrag(slot)}
                     >
                       +
                     </button>

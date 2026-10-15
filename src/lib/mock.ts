@@ -34,9 +34,9 @@ const MADAM_SCHEDULE: ScheduleRow[] = [
 const STUDENT_SCHEDULE: ScheduleRow[] = [
   { day: 1, start: '08:00', end: '10:00', label: 'ITT626 · Backend', venue: 'DS 1B' },
   { day: 1, start: '14:00', end: '16:00', label: 'ICT602 · Mobile', venue: 'ODL' },
-  { day: 1, start: '16:00', end: '18:00', label: 'CSP600 · Proposal', venue: 'DS 2A' },
+  { day: 1, start: '16:00', end: '18:00', label: 'CSP600 · FYP', venue: 'DS 2A' },
   { day: 2, start: '08:00', end: '10:00', label: 'LCC500 · English', venue: 'BK 19' },
-  { day: 2, start: '10:00', end: '12:00', label: 'CSP600 · Proposal', venue: 'BT 07' },
+  { day: 2, start: '10:00', end: '12:00', label: 'CSP600 · FYP', venue: 'BT 07' },
   { day: 2, start: '14:00', end: '16:00', label: 'ITT593 · Forensic', venue: 'ODL' },
   { day: 3, start: '08:00', end: '10:00', label: 'ITT626 · Backend', venue: 'JMK 4' },
   { day: 3, start: '10:00', end: '12:00', label: 'ITT550 · Network', venue: 'JMK 11' },
@@ -70,7 +70,13 @@ const MOCK_STUDENT_CLASSES: ClassBlock[] = STUDENT_SCHEDULE.map((s, i) => ({
 }))
 
 const INITIAL_ALLOWLIST: AllowlistEntry[] = [
-  { id: 'a1', student_id: '2025229096', name: 'SHU', created_at: '' },
+  { id: 'a1', student_id: '2025229096', name: 'SHU', full_name: 'NORSHUAIZAM BIN ABDUL SHUKOR', created_at: '' },
+  { id: 'a2', student_id: '2025423452', name: 'HKL', full_name: 'MUHAMMAD HAIKAL BIN JASMY HAIRUDDIN', created_at: '' },
+  { id: 'a3', student_id: '2025228256', name: 'BQS', full_name: 'NUR BALQIS BINTI MD AYUB', created_at: '' },
+  { id: 'a4', student_id: '2025429904', name: 'IZH', full_name: 'NUR IZZAH FATIN BINTI FADZLAH', created_at: '' },
+  { id: 'a5', student_id: '2025219938', name: 'IZT', full_name: 'IZZAT IZZANI BIN MOHD NASIR', created_at: '' },
+  { id: 'a6', student_id: '2025219828', name: 'HZQ', full_name: 'NOR HAZIQ EZMI BIN NORAZMI', created_at: '' },
+  { id: 'a7', student_id: '2025229238', name: 'AFQ', full_name: 'MUHAMMAD AFIQ BIN AZMAN', created_at: '' },
 ]
 
 // Booking contoh (status akan di-render ikut minggu semasa)
@@ -148,7 +154,7 @@ export function mockSetStatus(id: string, status: Booking['status']): void {
 export function mockAddAllowlist(studentId: string, name: string): void {
   store.allowlist = [
     ...store.allowlist.filter((e) => e.student_id !== studentId),
-    { id: `mock-${studentId}`, student_id: studentId, name, created_at: '' },
+    { id: `mock-${studentId}`, student_id: studentId, name, full_name: name, created_at: '' },
   ]
 }
 
@@ -199,6 +205,9 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
           (c) => c.day_of_week === day && overlaps(start, end, c.start_time, c.end_time),
         )
         const booking = bookings.find((b) => b.day_of_week === day && b.slot_start === start)
+        const entry = booking
+          ? getMockAllowlist().find((e) => e.student_id === booking.student_id)
+          : undefined
 
         slots.push({
           day_of_week: day,
@@ -207,6 +216,7 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
           status: isClass ? 'class' : booking ? (booking.status as 'pending' | 'approved') : 'available',
           booking_id: booking?.id ?? null,
           student_name: booking?.student_name ?? null,
+          student_full_name: entry?.full_name ?? null,
           mode: booking?.mode ?? null,
         })
       }

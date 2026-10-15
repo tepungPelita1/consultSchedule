@@ -226,13 +226,16 @@ alter table public.class_blocks enable row level security;
 alter table public.bookings enable row level security;
 
 -- Jadual kelas & booking boleh dibaca umum (untuk render jadual)
+drop policy if exists "class_blocks_read" on public.class_blocks;
 create policy "class_blocks_read" on public.class_blocks
   for select using (true);
 
+drop policy if exists "bookings_read" on public.bookings;
 create policy "bookings_read" on public.bookings
   for select using (true);
 
 -- allowlist: baca umum (untuk page admin). Nota: mendedahkan ID pelajar — circle kecil.
+drop policy if exists "allowlist_read" on public.allowlist;
 create policy "allowlist_read" on public.allowlist
   for select using (true);
 
@@ -250,4 +253,15 @@ grant execute on function public.add_allowlist(text, text) to anon, authenticate
 grant execute on function public.remove_allowlist(text) to anon, authenticated;
 
 -- Realtime (optional): siarkan perubahan bookings ke klien
-alter publication supabase_realtime add table public.bookings;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'bookings'
+  ) then
+    alter publication supabase_realtime add table public.bookings;
+  end if;
+end
+$$;

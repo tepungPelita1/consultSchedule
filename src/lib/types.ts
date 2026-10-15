@@ -16,6 +16,7 @@ export interface WeekSlot {
   status: SlotStatus
   booking_id: string | null
   student_name: string | null
+  student_full_name: string | null
   mode: BookingMode | null
 }
 
@@ -42,7 +43,10 @@ export interface ClassBlock {
 export interface AllowlistEntry {
   id: string
   student_id: string
+  /** Kod pendek yang dipapar pada blok (cth. HKL) */
   name: string
+  /** Nama penuh — dipapar bila hover/tap */
+  full_name: string
   created_at: string
 }
 
