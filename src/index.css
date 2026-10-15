@@ -425,6 +425,13 @@ button {
   padding: 4px 7px;
   gap: 1px;
 }
+
+/* Kelas tambahan/ad-hoc: penuh rentas kedua-dua lane pada hari dua lane */
+.trk .blk.kelas.extra {
+  top: 7px;
+  bottom: 7px;
+  height: auto;
+}
 .trk .blk.kelas b {
   font-size: 13px;
 }
