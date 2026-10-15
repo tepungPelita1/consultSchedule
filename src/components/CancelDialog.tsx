@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { useCancelBooking } from '@/lib/useSchedule'
@@ -67,6 +68,9 @@ function CancelDialogBody({
     defaultValues: { studentId: '' },
   })
 
+  const studentIdField = register('studentId')
+  const validIdRef = useRef(false)
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
@@ -85,6 +89,7 @@ function CancelDialogBody({
         studentId: values.studentId,
       })
       setSent(true)
+      haptic(HAPTIC.action)
       toast.success(t('cancelled'))
     } catch (err) {
       const message = err instanceof Error ? err.message : ''
@@ -135,7 +140,14 @@ function CancelDialogBody({
                 <input
                   type="text"
                   inputMode="numeric"
-                  {...register('studentId')}
+                  {...studentIdField}
+                  onChange={(event) => {
+                    studentIdField.onChange(event)
+                    // Getaran sebaik Student ID cukup 10 digit.
+                    const valid = /^\d{10}$/.test(event.target.value)
+                    if (valid && !validIdRef.current) haptic(HAPTIC.tap)
+                    validIdRef.current = valid
+                  }}
                   placeholder={t('studentIdPlaceholder')}
                   autoFocus
                   maxLength={10}
@@ -152,7 +164,12 @@ function CancelDialogBody({
                 <button type="button" className="pill" onClick={onClose}>
                   {t('cancel')}
                 </button>
-                <button type="submit" className="pill ok" disabled={cancelBooking.isPending}>
+                <button
+                  type="submit"
+                  className="pill ok"
+                  disabled={cancelBooking.isPending}
+                  onClick={(event) => hapticWithFallback(HAPTIC.action, event.currentTarget)}
+                >
                   {cancelBooking.isPending ? t('loading') : t('cancelConfirm')}
                 </button>
               </div>

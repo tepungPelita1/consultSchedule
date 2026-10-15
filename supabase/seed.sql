@@ -2,7 +2,7 @@
 -- seed.sql — Data awal (JADUAL SEBENAR Madam Idayati)
 -- Universiti Teknologi MARA (UiTM) Cawangan Melaka
 -- Semester September 2026 -- February 2027
--- JALANKAN SELEPAS migration 0001 – 0006
+-- JALANKAN SELEPAS migration 0001 – 0007
 -- =============================================================
 
 -- Senarai pelajar (allowlist)

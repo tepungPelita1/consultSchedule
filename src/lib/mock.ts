@@ -114,17 +114,21 @@ interface MockStore {
   allowlist: AllowlistEntry[]
   bookings: Booking[]
   extraClasses: ClassBlock[]
+  /** Elak data contoh di-seed semula selepas tempahan dikosongkan. */
+  seeded: boolean
 }
 
 const store: MockStore = {
   allowlist: [...INITIAL_ALLOWLIST],
   bookings: [],
   extraClasses: [],
+  seeded: false,
 }
 
 export function ensureMockBookings(weekStart: string): Booking[] {
-  if (store.bookings.length === 0) {
+  if (!store.seeded) {
     store.bookings = initialMockBookings(weekStart)
+    store.seeded = true
   }
   return store.bookings
 }
@@ -168,6 +172,14 @@ export function mockAddExtraClass(block: ClassBlock): void {
 
 export function mockRemoveExtraClass(id: string): void {
   store.extraClasses = store.extraClasses.filter((b) => b.id !== id)
+}
+
+export function mockClearWeekBookings(weekStart: string): void {
+  store.bookings = store.bookings.filter((b) => b.week_start !== weekStart)
+}
+
+export function mockClearWeekExtraClasses(weekStart: string): void {
+  store.extraClasses = store.extraClasses.filter((c) => c.week_start !== weekStart)
 }
 
 // ---------- Generators ----------

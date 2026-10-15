@@ -8,6 +8,8 @@ import {
   mockAddBooking,
   mockAddExtraClass,
   mockCancelBooking,
+  mockClearWeekBookings,
+  mockClearWeekExtraClasses,
   mockRemoveAllowlist,
   mockRemoveExtraClass,
   mockSetStatus,
@@ -17,6 +19,8 @@ import {
   addExtraClass,
   bookSlot,
   cancelBooking,
+  clearWeekBookings,
+  clearWeekExtraClasses,
   fetchAllowlist,
   fetchBookings,
   fetchClassBlocks,
@@ -333,6 +337,38 @@ export function useRemoveExtraClass(weekStart: string) {
       await delay(200)
       if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
       mockRemoveExtraClass(id)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: classBlocksKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
+    },
+  })
+}
+
+export function useClearWeekBookings(weekStart: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (pin: string): Promise<void> => {
+      if (isSupabaseConfigured) return clearWeekBookings(weekStart, pin)
+      await delay(200)
+      if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
+      mockClearWeekBookings(weekStart)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
+    },
+  })
+}
+
+export function useClearWeekExtraClasses(weekStart: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (pin: string): Promise<void> => {
+      if (isSupabaseConfigured) return clearWeekExtraClasses(weekStart, pin)
+      await delay(200)
+      if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
+      mockClearWeekExtraClasses(weekStart)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: classBlocksKey(weekStart) })

@@ -61,13 +61,13 @@ function SchedulePage() {
     toast.success(t('madamActive'))
   }
 
-  const handleAddExtra = async (slot: WeekSlot) => {
+  const handleAddExtra = async (block: FreeBlock) => {
     try {
       await addExtra.mutateAsync({
         input: {
-          day_of_week: slot.day_of_week,
-          start_time: slot.slot_start,
-          end_time: slot.slot_end,
+          day_of_week: block.day_of_week,
+          start_time: block.start,
+          end_time: block.end,
           label: t('adhocLabel'),
           venue: '',
           week_start: weekStart,
@@ -156,7 +156,7 @@ function SchedulePage() {
           classBlocks={classBlocks}
           madamMode={madamMode}
           onBook={setSelected}
-          onAddExtra={(slot) => void handleAddExtra(slot)}
+          onAddExtra={(block) => void handleAddExtra(block)}
           onRemoveExtra={(id) => void handleRemoveExtra(id)}
           onCancelBooking={setCancelSlot}
         />
