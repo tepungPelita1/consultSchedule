@@ -1,6 +1,6 @@
 import { addDays, format, getDate, isSameDay, parseISO } from 'date-fns'
 import { enUS, ms as msLocale } from 'date-fns/locale'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
@@ -46,6 +46,8 @@ const WORK_DURATION = WORK_END - WORK_START
 // Sentuh: tempoh tahan untuk masuk mod slide, dan jarak masa double tap.
 const LONG_PRESS_MS = 1500
 const DOUBLE_TAP_MS = 500
+const MOVE_CANCEL_PX = 10
+function vibrate(ms: number) { try { navigator.vibrate?.(ms) } catch { } }
 
 const pct = (minutes: number): number => ((minutes - WORK_START) / WORK_DURATION) * 100
 const widthPct = (duration: number): number => (duration / WORK_DURATION) * 100
@@ -144,8 +146,40 @@ function WeekTimeline({
   // Peranti sentuh: tap pertama "arm" slot (tunjuk +), double tap tempah,
   // tahan ~long press untuk slide pilih julat dan auto buka tempahan.
   const [armed, setArmed] = useState<{ day: Weekday; slot_start: string } | null>(null)
+  const [holding, setHolding] = useState(false)
   const lastTapRef = useRef<{ day: Weekday; slot_start: string; at: number } | null>(null)
   const longPressRef = useRef<number | null>(null)
+  const holdingRef = useRef(false)
+  const suppressingClickRef = useRef(false)
+  const touchStartRef = useRef<{ sx: number; sy: number; time: number; becomeDrag: boolean } | null>(null)
+
+  const commitDrag = useCallback((next: DragState) => {
+    dragRef.current = next
+    setDrag(next)
+  }, [])
+
+  const finishTouchDrag = () => {
+    const d = dragRef.current
+    if (!d) return
+    const min = d.anchor < d.current ? d.anchor : d.current
+    const max = d.anchor > d.current ? d.anchor : d.current
+    onBook({ day_of_week: d.day, start: min, end: toTime(toMinutes(max) + 30) })
+    dragRef.current = null
+    setDrag(null)
+    setArmed(null)
+  }
+
+  const startTouchSingle = (slot: WeekSlot) => {
+    if (madamMode) {
+      setArmed(null)
+      onAddExtra(slot)
+      vibrate(15)
+      return
+    }
+    onBook({ day_of_week: slot.day_of_week, start: slot.slot_start, end: slot.slot_end })
+  }
+
+  useEffect(() => { dragRef.current = drag }, [drag])
 
   const [tip, setTip] = useState<{
     title: string
@@ -242,15 +276,6 @@ function WeekTimeline({
     return pct(minutes)
   }
 
-  const startDrag = (slot: WeekSlot) => {
-    if (madamMode) {
-      onAddExtra(slot)
-      return
-    }
-    const state = { day: slot.day_of_week, anchor: slot.slot_start, current: slot.slot_start }
-    dragRef.current = state
-    setDrag(state)
-  }
 
   const extendDrag = (slot: WeekSlot) => {
     if (madamMode) return
@@ -490,17 +515,110 @@ function WeekTimeline({
                       data-day={day}
                       data-slot={slot.slot_start}
                       aria-label={`${t('bookSlot')} ${slot.slot_start}`}
+                      onContextMenu={(event) => event.preventDefault()}
                       onPointerDown={(event) => {
-                        try {
-                          event.currentTarget.releasePointerCapture(event.pointerId)
-                        } catch {
-                          // Sesetengah browser Safari sentuh tak ada implicit capture — teruskan.
+                        if (event.pointerType === 'mouse') {
+                          commitDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
                         }
-                        if (event.pointerType !== 'touch') {
-                          startDrag(slot)
+                      }}
+                      onPointerEnter={(event) => {
+                        if (event.pointerType !== 'touch') extendDrag(slot)
+                      }}
+                      // Sentuh: long press + slide
+                      onTouchStart={(event) => {
+                        suppressingClickRef.current = false
+                        const touch = event.touches[0]
+                        touchStartRef.current = { sx: touch.clientX, sy: touch.clientY, time: Date.now(), becomeDrag: false }
+                        if (longPressRef.current !== null) {
+                          window.clearTimeout(longPressRef.current)
+                          longPressRef.current = null
+                        }
+                        holdingRef.current = true
+                        setHolding(true)
+                        longPressRef.current = window.setTimeout(() => {
+                          longPressRef.current = null
+                          const info = touchStartRef.current
+                          if (!info) return
+                          info.becomeDrag = true
+                          setArmed(null)
+                          if (madamMode) {
+                            onAddExtra(slot)
+                            vibrate(20)
+                            holdingRef.current = false
+                            setHolding(false)
+                            return
+                          }
+                          commitDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
+                          holdingRef.current = false
+                          setHolding(false)
+                          vibrate(20)
+                        }, LONG_PRESS_MS)
+                      }}
+                      onTouchMove={(event) => {
+                        const info = touchStartRef.current
+                        if (!info) return
+                        const touch = event.touches[0]
+                        const dx = Math.abs(touch.clientX - info.sx)
+                        const dy = Math.abs(touch.clientY - info.sy)
+                        if (info.becomeDrag) {
+                          const el = document.elementFromPoint(touch.clientX, touch.clientY)
+                          const target = el instanceof HTMLElement ? el.closest<HTMLElement>('.blk.free') : null
+                          if (target) {
+                            const d2 = Number(target.dataset.day)
+                            const ss = target.dataset.slot
+                            if (ss && Number.isFinite(d2)) {
+                              const cur = dragRef.current
+                              if (cur && cur.day === d2) commitDrag({ ...cur, current: ss })
+                            }
+                          }
                           return
                         }
-
+                        if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+                          if (longPressRef.current !== null) {
+                            window.clearTimeout(longPressRef.current)
+                            longPressRef.current = null
+                          }
+                          holdingRef.current = false
+                          setHolding(false)
+                          info.becomeDrag = false
+                        }
+                      }}
+                      onTouchEnd={() => {
+                        const info = touchStartRef.current
+                        const becameDrag = !!info?.becomeDrag
+                        if (longPressRef.current !== null) {
+                          window.clearTimeout(longPressRef.current)
+                          longPressRef.current = null
+                        }
+                        holdingRef.current = false
+                        setHolding(false)
+                        touchStartRef.current = null
+                        if (becameDrag) {
+                          if (!madamMode) finishTouchDrag()
+                          suppressingClickRef.current = true
+                        }
+                      }}
+                      onTouchCancel={() => {
+                        if (longPressRef.current !== null) {
+                          window.clearTimeout(longPressRef.current)
+                          longPressRef.current = null
+                        }
+                        holdingRef.current = false
+                        setHolding(false)
+                        touchStartRef.current = null
+                        dragRef.current = null
+                        setDrag(null)
+                      }}
+                      onClick={(event) => {
+                        if (event.detail === 0 && !(event as React.MouseEvent).isTrusted) return
+                        const isTouchBrowser =
+                          typeof window !== 'undefined' &&
+                          (window.matchMedia?.('(hover: none)').matches ?? false)
+                        if (suppressingClickRef.current) {
+                          suppressingClickRef.current = false
+                          return
+                        }
+                        if (!isTouchBrowser) return
                         const now = Date.now()
                         const last = lastTapRef.current
                         const isDouble =
@@ -508,41 +626,18 @@ function WeekTimeline({
                           last.day === day &&
                           last.slot_start === slot.slot_start &&
                           now - last.at < DOUBLE_TAP_MS
-
-                        if (longPressRef.current !== null) {
-                          window.clearTimeout(longPressRef.current)
-                          longPressRef.current = null
-                        }
-
-                        // Double tap: terus buka tempahan.
-                        if (isDouble) {
+                        if (isDouble || (isArmed && !holding)) {
                           lastTapRef.current = null
                           setArmed(null)
-                          startDrag(slot)
+                          vibrate(15)
+                          startTouchSingle(slot)
                           return
                         }
-
-                        // Tap tunggal: tunjuk "+" sahaja.
                         setArmed({ day, slot_start: slot.slot_start })
                         lastTapRef.current = { day, slot_start: slot.slot_start, at: now }
+                        vibrate(10)
+                      }}
 
-                        // Tahan ~3 saat: masuk mod slide (julat) & auto buka tempahan.
-                        longPressRef.current = window.setTimeout(() => {
-                          longPressRef.current = null
-                          lastTapRef.current = null
-                          if (madamMode) {
-                            setArmed(null)
-                            onAddExtra(slot)
-                            return
-                          }
-                          const state = { day, anchor: slot.slot_start, current: slot.slot_start }
-                          dragRef.current = state
-                          setDrag(state)
-                        }, LONG_PRESS_MS)
-                      }}
-                      onPointerEnter={(event) => {
-                        if (event.pointerType !== 'touch') extendDrag(slot)
-                      }}
                     >
                       +
                     </button>
