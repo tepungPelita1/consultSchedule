@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
-import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
+import { interpolate, useI18n } from '@/lib/i18n'
+import { cn, weekNumber } from '@/lib/utils'
 import type { ClassBlock, FreeBlock, WeekSlot, Weekday } from '@/lib/types'
 import { Cat } from './illustrations'
 
@@ -81,6 +81,7 @@ function FolderHeader({ weekStart, onPrev, onNext, onToday }: FolderHeaderProps)
   const locale = lang === 'ms' ? msLocale : enUS
   const monday = parseISO(weekStart)
   const title = format(monday, 'MMMM yyyy', { locale })
+  const weekNo = weekNumber(weekStart)
 
   return (
     <header className="folder">
@@ -94,8 +95,13 @@ function FolderHeader({ weekStart, onPrev, onNext, onToday }: FolderHeaderProps)
             <button type="button" className="pill" onClick={onPrev} aria-label={t('prevWeek')}>
               ←
             </button>
-            <button type="button" className="pill" onClick={onToday}>
-              {t('thisWeek')}
+            <button
+              type="button"
+              className="pill thisweek"
+              onClick={onToday}
+              aria-label={t('thisWeek')}
+            >
+              {weekNo >= 1 ? interpolate(t('weekLabel'), { n: weekNo }) : t('thisWeek')}
             </button>
             <button type="button" className="pill" onClick={onNext} aria-label={t('nextWeek')}>
               →
@@ -113,7 +119,7 @@ interface WeekTimelineProps {
   classBlocks: ClassBlock[]
   madamMode: boolean
   onBook: (block: FreeBlock) => void
-  onAddExtra: (slot: WeekSlot) => void
+  onAddExtra: (block: FreeBlock) => void
   onRemoveExtra: (id: string) => void
   onCancelBooking: (slot: WeekSlot) => void
 }
@@ -163,8 +169,10 @@ function WeekTimeline({
     if (!d) return
     const min = d.anchor < d.current ? d.anchor : d.current
     const max = d.anchor > d.current ? d.anchor : d.current
-    onBook({ day_of_week: d.day, start: min, end: toTime(toMinutes(max) + 30) })
+    const block = { day_of_week: d.day, start: min, end: toTime(toMinutes(max) + 30) }
     dragRef.current = null
+    if (madamMode) onAddExtra(block)
+    else onBook(block)
     setDrag(null)
     setArmed(null)
   }
@@ -172,7 +180,7 @@ function WeekTimeline({
   const startTouchSingle = (slot: WeekSlot) => {
     if (madamMode) {
       setArmed(null)
-      onAddExtra(slot)
+      onAddExtra({ day_of_week: slot.day_of_week, start: slot.slot_start, end: slot.slot_end })
       return
     }
     onBook({ day_of_week: slot.day_of_week, start: slot.slot_start, end: slot.slot_end })
@@ -277,7 +285,6 @@ function WeekTimeline({
 
 
   const extendDrag = (slot: WeekSlot) => {
-    if (madamMode) return
     setDrag((d) =>
       d && d.day === slot.day_of_week ? { ...d, current: slot.slot_start } : d,
     )
@@ -289,11 +296,10 @@ function WeekTimeline({
       if (!d) return
       const min = d.anchor < d.current ? d.anchor : d.current
       const max = d.anchor > d.current ? d.anchor : d.current
-      onBook({
-        day_of_week: d.day,
-        start: min,
-        end: toTime(toMinutes(max) + 30),
-      })
+      const block = { day_of_week: d.day, start: min, end: toTime(toMinutes(max) + 30) }
+      dragRef.current = null
+      if (madamMode) onAddExtra(block)
+      else onBook(block)
       setDrag(null)
     }
     const cancel = () => setDrag(null)
@@ -303,7 +309,7 @@ function WeekTimeline({
       window.removeEventListener('pointerup', finish)
       window.removeEventListener('pointercancel', cancel)
     }
-  }, [onBook])
+  }, [onBook, onAddExtra, madamMode])
 
   const dragRange = (day: Weekday): [string, string] | null => {
     if (!drag || drag.day !== day) return null
@@ -547,12 +553,6 @@ function WeekTimeline({
                           info.becomeDrag = true
                           setArmed(null)
                           haptic(HAPTIC.longPress)
-                          if (madamMode) {
-                            onAddExtra(slot)
-                            holdingRef.current = false
-                            setHolding(false)
-                            return
-                          }
                           commitDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
                           holdingRef.current = false
                           setHolding(false)
@@ -598,7 +598,7 @@ function WeekTimeline({
                         setHolding(false)
                         touchStartRef.current = null
                         if (becameDrag) {
-                          if (!madamMode) finishTouchDrag()
+                          finishTouchDrag()
                           suppressingClickRef.current = true
                         }
                       }}

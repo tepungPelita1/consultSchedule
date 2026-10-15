@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { useBookRange } from '@/lib/useSchedule'
@@ -71,6 +72,9 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
     defaultValues: { studentId: '', mode: 'inperson' },
   })
 
+  const studentIdField = register('studentId')
+  const validIdRef = useRef(false)
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
@@ -92,6 +96,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
         mode: values.mode,
       })
       setSent(true)
+      haptic(HAPTIC.action)
       toast.success(t('bookingSent'))
     } catch (err) {
       const message = err instanceof Error ? err.message : ''
@@ -136,7 +141,14 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                 <input
                   type="text"
                   inputMode="numeric"
-                  {...register('studentId')}
+                  {...studentIdField}
+                  onChange={(event) => {
+                    studentIdField.onChange(event)
+                    // Getaran sebaik Student ID cukup 10 digit.
+                    const valid = /^\d{10}$/.test(event.target.value)
+                    if (valid && !validIdRef.current) haptic(HAPTIC.tap)
+                    validIdRef.current = valid
+                  }}
                   placeholder={t('studentIdPlaceholder')}
                   autoFocus
                   maxLength={10}
@@ -161,14 +173,24 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                     className="pill"
                     style={{ cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' }}
                   >
-                    <input type="radio" value="inperson" {...register('mode')} />
+                    <input
+                      type="radio"
+                      value="inperson"
+                      {...register('mode')}
+                      onClick={(event) => hapticWithFallback(HAPTIC.tap, event.currentTarget)}
+                    />
                     {t('inperson')}
                   </label>
                   <label
                     className="pill"
                     style={{ cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' }}
                   >
-                    <input type="radio" value="online" {...register('mode')} />
+                    <input
+                      type="radio"
+                      value="online"
+                      {...register('mode')}
+                      onClick={(event) => hapticWithFallback(HAPTIC.tap, event.currentTarget)}
+                    />
                     {t('online')}
                   </label>
                 </div>
@@ -178,7 +200,12 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                 <button type="button" className="pill" onClick={onClose}>
                   {t('cancel')}
                 </button>
-                <button type="submit" className="pill ok" disabled={bookRange.isPending}>
+                <button
+                  type="submit"
+                  className="pill ok"
+                  disabled={bookRange.isPending}
+                  onClick={(event) => hapticWithFallback(HAPTIC.action, event.currentTarget)}
+                >
                   {bookRange.isPending ? t('loading') : t('submit')}
                 </button>
               </div>

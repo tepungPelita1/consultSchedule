@@ -1,7 +1,14 @@
+import { useState } from 'react'
 import { toast } from 'sonner'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
-import { useAllowlist, useBookings, useSetBookingStatus } from '@/lib/useSchedule'
+import {
+  useAllowlist,
+  useBookings,
+  useClearWeekBookings,
+  useClearWeekExtraClasses,
+  useSetBookingStatus,
+} from '@/lib/useSchedule'
 import type { Booking, BookingStatus, Weekday } from '@/lib/types'
 
 const DAY_FULL: Record<Weekday, TranslationKey> = {
@@ -36,6 +43,11 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
   const bookings = useBookings(weekStart)
   const allowlist = useAllowlist()
   const setStatus = useSetBookingStatus(weekStart)
+  const clearBookings = useClearWeekBookings(weekStart)
+  const clearAdhoc = useClearWeekExtraClasses(weekStart)
+
+  const [confirming, setConfirming] = useState(false)
+  const [resetText, setResetText] = useState('')
 
   const fail = (err: unknown) => {
     const message = err instanceof Error ? err.message : ''
@@ -52,6 +64,34 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
       toast.success(t('updated'))
     } catch (err) {
       fail(err)
+    }
+  }
+
+  const busy = clearBookings.isPending || clearAdhoc.isPending
+
+  // Reset minggu: kosongkan tempahan + kelas ad-hoc. Sahkan dengan taip "reset".
+  const handleReset = async () => {
+    if (!confirming) {
+      setConfirming(true)
+      return
+    }
+    if (resetText.trim().toLowerCase() !== 'reset') return
+    try {
+      await clearBookings.mutateAsync(pin)
+      await clearAdhoc.mutateAsync(pin)
+      toast.success(t('resetDone'))
+      setConfirming(false)
+      setResetText('')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      if (message.toUpperCase().includes('UNAUTHORIZED')) {
+        onUnauthorized()
+      } else if (/COULD NOT FIND|DOES NOT EXIST|PGRST202|SCHEMA CACHE/i.test(message)) {
+        toast.error(t('resetError'))
+      } else {
+        toast.error(t('errorMsg'))
+      }
+      console.error('[reset week]', err)
     }
   }
 
@@ -129,18 +169,69 @@ function MadamPanel({ weekStart, pin, onUnauthorized }: MadamPanelProps) {
         {allowlist.isLoading ? (
           <p className="meta">{t('loading')}</p>
         ) : allowlist.data && allowlist.data.length > 0 ? (
-          <div>
-            {allowlist.data.map((entry) => (
-              <div key={entry.id} className="madmam-row">
-                <span>
-                  {entry.full_name || entry.name}{' '}
-                  <span className="meta">({entry.student_id})</span>
-                </span>
-              </div>
-            ))}
+          <div className="supervisee">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('studentName')}</th>
+                  <th>{t('studentId')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allowlist.data.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.full_name || entry.name}</td>
+                    <td>{entry.student_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="meta">{t('noAllowlist')}</p>
+        )}
+      </section>
+
+      {/* Urus minggu ini: reset (kosongkan tempahan + kelas ad-hoc) */}
+      <section style={{ marginTop: 16 }}>
+        <h3 className="meta" style={{ margin: '0 0 6px' }}>
+          {t('manageWeek')}
+        </h3>
+        <button
+          type="button"
+          className="pill danger"
+          disabled={busy}
+          onClick={() => void handleReset()}
+        >
+          {t('clearWeek')}
+        </button>
+        {confirming && (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              marginTop: 8,
+            }}
+          >
+            <input
+              type="text"
+              value={resetText}
+              onChange={(event) => setResetText(event.target.value)}
+              placeholder={t('typeReset')}
+              autoFocus
+              style={{ flex: 1, minWidth: 140 }}
+            />
+            <button
+              type="button"
+              className="pill danger"
+              disabled={busy || resetText.trim().toLowerCase() !== 'reset'}
+              onClick={() => void handleReset()}
+            >
+              {t('confirm')}
+            </button>
+          </div>
         )}
       </section>
     </div>

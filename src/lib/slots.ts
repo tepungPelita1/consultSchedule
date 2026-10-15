@@ -152,3 +152,19 @@ export async function removeExtraClass(id: string, pin: string): Promise<void> {
   })
   if (error) throw error
 }
+
+export async function clearWeekBookings(weekStart: string, pin: string): Promise<void> {
+  const { error } = await supabase.rpc('clear_week_bookings', {
+    p_week_start: weekStart,
+    p_pin: pin,
+  })
+  if (error) throw error
+}
+
+export async function clearWeekExtraClasses(weekStart: string, pin: string): Promise<void> {
+  const { error } = await supabase.rpc('clear_week_extra_classes', {
+    p_week_start: weekStart,
+    p_pin: pin,
+  })
+  if (error) throw error
+}
