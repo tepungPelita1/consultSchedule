@@ -519,6 +519,13 @@ button {
   color: var(--ink);
 }
 
+/* Long press aktif: ring berdenyut supaya jelas jari sedang tahan. */
+.free.holding {
+  color: var(--ink);
+  outline: 2px dashed var(--orange);
+  outline-offset: -2px;
+}
+
 .trk {
   user-select: none;
 }
