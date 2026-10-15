@@ -44,7 +44,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 2. Klik slot kosong → modal → isi nama + studentID + mod → hantar.
 3. Sistem sahkan allowlist → simpan `pending`.
 4. Madam buka "Mod madam" → approve/reject; tambah kelas tambahan; urus allowlist.
-5. Slot update (approved = amber ✓, pending = amber).
+5. Slot update (approved = hijau ✓, pending = amber).
 
 ## 7. Keperluan Bukan-Fungsional
 - Responsive: board scroll melintang, label hari sticky.

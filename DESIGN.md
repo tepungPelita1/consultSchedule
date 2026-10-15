@@ -58,7 +58,7 @@ N slot kosong minggu ini        ☐ Mod madam
 | Kelas | Teal, label kod subjek + julat masa | Tak boleh ditempah |
 | Kosong | Hijau muda, "+" di tengah | Ketik → pop-up nama + ID + mod → Tempah |
 | Ditempah (pending) | Amber pucat, nama + "menunggu" | Ketik → pop-up (madam: approve/reject) |
-| Ditempah (approved) | Amber pekat + ✓ | Ketik → pop-up |
+| Ditempah (approved) | Hijau pekat + ✓ | Ketik → pop-up |
 | Lepas | Lutsinar 35%, garis titik | Tak boleh ditekan |
 | Mod madam | Tick kotak → ketik slot kosong = tambah kelas; ketik kelas tambahan = buang | — |
 
