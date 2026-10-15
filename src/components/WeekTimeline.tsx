@@ -43,6 +43,10 @@ const WORK_START = 8 * 60
 const WORK_END = 18 * 60
 const WORK_DURATION = WORK_END - WORK_START
 
+// Sentuh: tempoh tahan untuk masuk mod slide, dan jarak masa double tap.
+const LONG_PRESS_MS = 3000
+const DOUBLE_TAP_MS = 350
+
 const pct = (minutes: number): number => ((minutes - WORK_START) / WORK_DURATION) * 100
 const widthPct = (duration: number): number => (duration / WORK_DURATION) * 100
 
@@ -137,8 +141,11 @@ function WeekTimeline({
   const [drag, setDrag] = useState<DragState | null>(null)
   const dragRef = useRef<DragState | null>(null)
 
-  // Peranti sentuh: tap pertama "arm" slot (tunjuk +), tap kedua baru tempah.
+  // Peranti sentuh: tap pertama "arm" slot (tunjuk +), double tap tempah,
+  // tahan ~long press untuk slide pilih julat dan auto buka tempahan.
   const [armed, setArmed] = useState<{ day: Weekday; slot_start: string } | null>(null)
+  const lastTapRef = useRef<{ day: Weekday; slot_start: string; at: number } | null>(null)
+  const longPressRef = useRef<number | null>(null)
 
   const [tip, setTip] = useState<{
     title: string
@@ -171,6 +178,38 @@ function WeekTimeline({
   useEffect(() => {
     dragRef.current = drag
   }, [drag])
+
+  // Bersihkan timer long-press bila jari dilepas/dibatalkan.
+  useEffect(() => {
+    const clear = () => {
+      if (longPressRef.current !== null) {
+        window.clearTimeout(longPressRef.current)
+        longPressRef.current = null
+      }
+    }
+    window.addEventListener('pointerup', clear)
+    window.addEventListener('pointercancel', clear)
+    return () => {
+      window.removeEventListener('pointerup', clear)
+      window.removeEventListener('pointercancel', clear)
+    }
+  }, [])
+
+  // Mod slide (sentuh): gerakkan jari atas slot kosong untuk panjangkan julat.
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' || !dragRef.current) return
+      const el = document.elementFromPoint(event.clientX, event.clientY)
+      const target = el instanceof HTMLElement ? el.closest<HTMLElement>('.blk.free') : null
+      if (!target) return
+      const day = Number(target.dataset.day) as Weekday
+      const slotStart = target.dataset.slot
+      if (!slotStart || !Number.isFinite(day)) return
+      setDrag((d) => (d && d.day === day ? { ...d, current: slotStart } : d))
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [])
 
   // Buang "arm" selepas 5 saat, atau bila tekan di luar slot kosong.
   useEffect(() => {
@@ -446,19 +485,52 @@ function WeekTimeline({
                       type="button"
                       className={cn('blk free', selected && 'drag-sel', isArmed && 'armed')}
                       style={{ left: `${left}%`, width: `${widthPct(30)}%` }}
+                      data-day={day}
+                      data-slot={slot.slot_start}
                       aria-label={`${t('bookSlot')} ${slot.slot_start}`}
                       onPointerDown={(event) => {
                         event.currentTarget.releasePointerCapture(event.pointerId)
-                        if (event.pointerType === 'touch') {
-                          if (isArmed) {
-                            setArmed(null)
-                            startDrag(slot)
-                          } else {
-                            setArmed({ day, slot_start: slot.slot_start })
-                          }
+                        if (event.pointerType !== 'touch') {
+                          startDrag(slot)
                           return
                         }
-                        startDrag(slot)
+
+                        const now = Date.now()
+                        const last = lastTapRef.current
+                        const isDouble =
+                          last !== null &&
+                          last.day === day &&
+                          last.slot_start === slot.slot_start &&
+                          now - last.at < DOUBLE_TAP_MS
+
+                        if (longPressRef.current !== null) {
+                          window.clearTimeout(longPressRef.current)
+                          longPressRef.current = null
+                        }
+
+                        // Double tap: terus buka tempahan.
+                        if (isDouble) {
+                          lastTapRef.current = null
+                          setArmed(null)
+                          startDrag(slot)
+                          return
+                        }
+
+                        // Tap tunggal: tunjuk "+" sahaja.
+                        setArmed({ day, slot_start: slot.slot_start })
+                        lastTapRef.current = { day, slot_start: slot.slot_start, at: now }
+
+                        // Tahan ~3 saat: masuk mod slide (julat) & auto buka tempahan.
+                        longPressRef.current = window.setTimeout(() => {
+                          longPressRef.current = null
+                          lastTapRef.current = null
+                          if (madamMode) {
+                            setArmed(null)
+                            onAddExtra(slot)
+                            return
+                          }
+                          setDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
+                        }, LONG_PRESS_MS)
                       }}
                       onPointerEnter={(event) => {
                         if (event.pointerType !== 'touch') extendDrag(slot)
