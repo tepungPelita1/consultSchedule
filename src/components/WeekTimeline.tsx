@@ -47,7 +47,7 @@ const WORK_DURATION = WORK_END - WORK_START
 const LONG_PRESS_MS = 1500
 const DOUBLE_TAP_MS = 500
 const MOVE_CANCEL_PX = 10
-function vibrate(ms: number) { try { navigator.vibrate?.(ms) } catch { } }
+function vibrate(pattern: number | number[]) { try { navigator.vibrate?.(pattern) } catch { } }
 
 const pct = (minutes: number): number => ((minutes - WORK_START) / WORK_DURATION) * 100
 const widthPct = (duration: number): number => (duration / WORK_DURATION) * 100
@@ -173,7 +173,7 @@ function WeekTimeline({
     if (madamMode) {
       setArmed(null)
       onAddExtra(slot)
-      vibrate(15)
+      vibrate(60)
       return
     }
     onBook({ day_of_week: slot.day_of_week, start: slot.slot_start, end: slot.slot_end })
@@ -322,7 +322,7 @@ function WeekTimeline({
           <div className="hrs">
             {hourCells.map((i) => (
               <span key={i} className={cn('meta', i % 2 !== 0 && 'invisible')}>
-                {ampm(8 + i / 2)}
+                {i % 2 === 0 ? ampm(8 + i / 2) : ''}
               </span>
             ))}
             <span className="meta end" aria-hidden="true">
@@ -350,7 +350,7 @@ function WeekTimeline({
           const range = dragRange(day)
 
           return (
-            <div key={day} className={cn('row', isToday && 'today')}>
+            <div key={day} className={cn('row', isToday && 'today', twoLane ? 'two-lane' : 'one-lane')}>
               <div className="dl">
                 <span className="meta">{t(DAY_SHORT[day])}</span>
                 <b>{getDate(date)}</b>
@@ -543,7 +543,7 @@ function WeekTimeline({
                           setArmed(null)
                           if (madamMode) {
                             onAddExtra(slot)
-                            vibrate(20)
+                            vibrate(80)
                             holdingRef.current = false
                             setHolding(false)
                             return
@@ -551,7 +551,7 @@ function WeekTimeline({
                           commitDrag({ day, anchor: slot.slot_start, current: slot.slot_start })
                           holdingRef.current = false
                           setHolding(false)
-                          vibrate(20)
+                          vibrate(80)
                         }, LONG_PRESS_MS)
                       }}
                       onTouchMove={(event) => {
@@ -613,7 +613,9 @@ function WeekTimeline({
                         if (event.detail === 0 && !(event as React.MouseEvent).isTrusted) return
                         const isTouchBrowser =
                           typeof window !== 'undefined' &&
-                          (window.matchMedia?.('(hover: none)').matches ?? false)
+                          ((window.matchMedia?.('(hover: none)').matches ?? false) ||
+                           (window.matchMedia?.('(pointer: coarse)').matches ?? false) ||
+                           (navigator.maxTouchPoints > 0))
                         if (suppressingClickRef.current) {
                           suppressingClickRef.current = false
                           return
@@ -629,13 +631,13 @@ function WeekTimeline({
                         if (isDouble || (isArmed && !holding)) {
                           lastTapRef.current = null
                           setArmed(null)
-                          vibrate(15)
+                          vibrate(60)
                           startTouchSingle(slot)
                           return
                         }
                         setArmed({ day, slot_start: slot.slot_start })
                         lastTapRef.current = { day, slot_start: slot.slot_start, at: now }
-                        vibrate(10)
+                        vibrate(40)
                       }}
 
                     >
