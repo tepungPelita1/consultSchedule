@@ -90,28 +90,6 @@ export function useWeekView(weekStart: string) {
  * Student side
  * ------------------------------------------------------------------ */
 
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
-
-function toTime(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function slotTimesInRange(start: string, end: string): { start: string; end: string }[] {
-  const out: { start: string; end: string }[] = []
-  let cur = toMinutes(start)
-  const stop = toMinutes(end)
-  while (cur < stop) {
-    out.push({ start: toTime(cur), end: toTime(cur + 30) })
-    cur += 30
-  }
-  return out
-}
-
 export interface BookRangeInput {
   day_of_week: Weekday
   start: string
@@ -125,15 +103,12 @@ export function useBookRange(weekStart: string) {
 
   return useMutation({
     mutationFn: async (input: BookRangeInput): Promise<void> => {
-      const times = slotTimesInRange(input.start, input.end)
       if (isSupabaseConfigured) {
-        // Nota: backend RPC `book_slot` sedia terima 30 min sahaja.
-        // Fasa backend (julat penuh) disambung kemudian.
         await bookSlot({
           week_start: weekStart,
           day_of_week: input.day_of_week,
           slot_start: input.start,
-          slot_end: times[0].end,
+          slot_end: input.end,
           student_id: input.student_id,
           mode: input.mode,
         })
@@ -144,19 +119,18 @@ export function useBookRange(weekStart: string) {
       if (!entry) {
         throw new Error('NOT_ALLOWLISTED')
       }
-      times.forEach((t, i) => {
-        mockAddBooking({
-          id: `demo-${Date.now()}-${i}`,
-          week_start: weekStart,
-          day_of_week: input.day_of_week,
-          slot_start: t.start,
-          slot_end: t.end,
-          student_id: input.student_id,
-          student_name: entry.name,
-          mode: input.mode,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        })
+      // Satu tempahan = satu baris dengan julat penuh.
+      mockAddBooking({
+        id: `demo-${Date.now()}`,
+        week_start: weekStart,
+        day_of_week: input.day_of_week,
+        slot_start: input.start,
+        slot_end: input.end,
+        student_id: input.student_id,
+        student_name: entry.name,
+        mode: input.mode,
+        status: 'pending',
+        created_at: new Date().toISOString(),
       })
     },
     onSuccess: () => {
