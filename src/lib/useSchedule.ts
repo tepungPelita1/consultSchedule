@@ -7,7 +7,7 @@ import {
   mockAddAllowlist,
   mockAddBooking,
   mockAddExtraClass,
-  mockCancelBooking,
+  mockCancelBookingBySlot,
   mockClearWeekBookings,
   mockClearWeekExtraClasses,
   mockRemoveAllowlist,
@@ -18,7 +18,7 @@ import {
   addAllowlistEntry,
   addExtraClass,
   bookSlot,
-  cancelBooking,
+  cancelBookingBySlot,
   clearWeekBookings,
   clearWeekExtraClasses,
   fetchAllowlist,
@@ -45,8 +45,12 @@ import type {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** PIN Mod madam (demo/mock sahaja — backend guna PIN sebenar) */
-export const MOCK_MADAM_PIN = '2026'
+/**
+ * PIN demo untuk mod mock — BUKAN PIN sebenar.
+ * Untuk demo lokal, set `VITE_MOCK_MADAM_PIN` dalam `.env.local` (gitignored).
+ * Jangan set dalam build produksi kerana ia akan masuk bundle.
+ */
+export const MOCK_MADAM_PIN = import.meta.env.VITE_MOCK_MADAM_PIN ?? 'DEMO-PIN-NOT-REAL'
 
 const weekSlotsKey = (weekStart: string) => ['week-slots', weekStart] as const
 const classBlocksKey = (weekStart: string) => ['class-blocks', weekStart] as const
@@ -149,18 +153,19 @@ export function useCancelBooking(weekStart: string) {
 
   return useMutation({
     mutationFn: async ({
-      bookingId,
+      dayOfWeek,
+      slotStart,
       studentId,
     }: {
-      bookingId: string
+      dayOfWeek: Weekday
+      slotStart: string
       studentId: string
     }): Promise<void> => {
-      if (isSupabaseConfigured) return cancelBooking(bookingId, studentId)
+      if (isSupabaseConfigured) {
+        return cancelBookingBySlot(weekStart, dayOfWeek, slotStart, studentId)
+      }
       await delay(200)
-      const booking = ensureMockBookings(weekStart).find((b) => b.id === bookingId)
-      if (!booking) throw new Error('BOOKING_NOT_FOUND')
-      if (booking.student_id !== studentId) throw new Error('NOT_YOUR_BOOKING')
-      mockCancelBooking(bookingId)
+      mockCancelBookingBySlot(weekStart, dayOfWeek, slotStart, studentId)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
@@ -174,14 +179,15 @@ export function useCancelBooking(weekStart: string) {
  * Madam side (Mod madam)
  * ------------------------------------------------------------------ */
 
-export function useBookings(weekStart: string) {
+export function useBookings(weekStart: string, pin: string) {
   return useQuery({
     queryKey: bookingsKey(weekStart),
     queryFn: async (): Promise<Booking[]> => {
-      if (isSupabaseConfigured) return fetchBookings(weekStart)
+      if (isSupabaseConfigured) return fetchBookings(weekStart, pin)
       await delay(200)
       return ensureMockBookings(weekStart).filter((b) => b.week_start === weekStart)
     },
+    enabled: Boolean(pin),
   })
 }
 
@@ -237,14 +243,15 @@ export function useMadamVerify() {
   })
 }
 
-export function useAllowlist() {
+export function useAllowlist(pin: string) {
   return useQuery({
     queryKey: allowlistKey,
     queryFn: async (): Promise<AllowlistEntry[]> => {
-      if (isSupabaseConfigured) return fetchAllowlist()
+      if (isSupabaseConfigured) return fetchAllowlist(pin)
       await delay(200)
       return getMockAllowlist()
     },
+    enabled: Boolean(pin),
   })
 }
 

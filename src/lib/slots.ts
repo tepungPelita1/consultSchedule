@@ -71,41 +71,42 @@ export async function bookSlot(input: BookSlotInput): Promise<string> {
   return data as string
 }
 
-export async function cancelBooking(bookingId: string, studentId: string): Promise<void> {
-  const { error } = await supabase.rpc('cancel_booking', {
-    p_booking_id: bookingId,
+export async function fetchBookings(weekStart: string, pin: string): Promise<Booking[]> {
+  const { data, error } = await supabase.rpc('get_week_bookings', {
+    p_week_start: weekStart,
+    p_pin: pin,
+  })
+  if (error) throw error
+  return data as Booking[]
+}
+
+export async function cancelBookingBySlot(
+  weekStart: string,
+  dayOfWeek: Weekday,
+  slotStart: string,
+  studentId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('cancel_booking_by_slot', {
+    p_week_start: weekStart,
+    p_day_of_week: dayOfWeek,
+    p_slot_start: slotStart,
     p_student_id: studentId,
   })
   if (error) throw error
 }
 
-export async function fetchBookings(weekStart: string): Promise<Booking[]> {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*')
-    .eq('week_start', weekStart)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data as Booking[]
-}
-
 /** Minggu (dalam senarai diberi) yang ada tempahan aktif — untuk tab Mod madam. */
 export async function fetchBookingWeeks(weeks: string[]): Promise<string[]> {
   if (weeks.length === 0) return []
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('week_start')
-    .in('week_start', weeks)
-    .in('status', ['pending', 'approved'])
+  const { data, error } = await supabase.rpc('get_active_booking_weeks', {
+    p_weeks: weeks.join(','),
+  })
   if (error) throw error
-  return [...new Set((data as { week_start: string }[]).map((row) => row.week_start))]
+  return (data as { week_start: string }[]).map((row) => row.week_start)
 }
 
-export async function fetchAllowlist(): Promise<AllowlistEntry[]> {
-  const { data, error } = await supabase
-    .from('allowlist')
-    .select('*')
-    .order('name', { ascending: true })
+export async function fetchAllowlist(pin: string): Promise<AllowlistEntry[]> {
+  const { data, error } = await supabase.rpc('get_supervisees', { p_pin: pin })
   if (error) throw error
   return data as AllowlistEntry[]
 }
@@ -152,12 +153,7 @@ export async function madamVerify(pin: string): Promise<boolean> {
 
 // Kelas tetap (week_start null) + kelas tambahan untuk minggu ini
 export async function fetchClassBlocks(weekStart: string): Promise<ClassBlock[]> {
-  const { data, error } = await supabase
-    .from('class_blocks')
-    .select('*')
-    .or(`week_start.is.null,week_start.eq.${weekStart}`)
-    .order('day_of_week', { ascending: true })
-    .order('start_time', { ascending: true })
+  const { data, error } = await supabase.rpc('get_class_blocks', { p_week_start: weekStart })
   if (error) throw error
   return data as ClassBlock[]
 }

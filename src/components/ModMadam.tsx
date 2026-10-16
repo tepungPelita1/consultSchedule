@@ -61,9 +61,9 @@ interface MadamPanelProps {
 
 function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: MadamPanelProps) {
   const { t } = useI18n()
-  const bookings = useBookings(weekStart)
+  const bookings = useBookings(weekStart, pin)
   const bookingWeeks = useBookingWeeks(weeks)
-  const allowlist = useAllowlist()
+  const allowlist = useAllowlist(pin)
   const setStatus = useSetBookingStatus(weekStart)
   const clearBookings = useClearWeekBookings(weekStart)
   const clearAdhoc = useClearWeekExtraClasses(weekStart)

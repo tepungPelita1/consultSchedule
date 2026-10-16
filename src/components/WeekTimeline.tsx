@@ -374,17 +374,15 @@ function WeekTimeline({
             start: string
             end: string
             status: 'pending' | 'approved'
-            student_full_name: string | null
-            mode: WeekSlot['mode']
             slot: WeekSlot
           }[] = []
           for (const s of slots) {
             if (s.day_of_week !== day || (s.status !== 'pending' && s.status !== 'approved')) {
               continue
             }
-            const key = s.booking_id ?? s.slot_start
+            const key = `${s.status}-${s.taken}-${s.slot_start}`
             const last = bookedGroups[bookedGroups.length - 1]
-            if (last && last.key === key && last.end === s.slot_start) {
+            if (last && last.status === s.status && last.end === s.slot_start) {
               last.end = s.slot_end
             } else {
               bookedGroups.push({
@@ -392,8 +390,6 @@ function WeekTimeline({
                 start: s.slot_start,
                 end: s.slot_end,
                 status: s.status as 'pending' | 'approved',
-                student_full_name: s.student_full_name,
-                mode: s.mode,
                 slot: s,
               })
             }
@@ -489,15 +485,11 @@ function WeekTimeline({
                   const left = pct(toMinutes(group.start))
                   const width = widthPct(toMinutes(group.end) - toMinutes(group.start))
                   const pending = group.status === 'pending'
-                  const title = group.student_full_name || group.slot.student_name || '—'
-                  const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}${
-                    group.mode
-                      ? ` · ${t(group.mode === 'online' ? 'online' : 'inperson')}`
-                      : ''
-                  }`
+                  const title = t(pending ? 'statusPending' : 'statusApproved')
+                  const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}`
                   const content = (
                     <>
-                      <b>{group.slot.student_name ?? t(pending ? 'statusPending' : 'statusApproved')}</b>
+                      <b>{title}</b>
                       <span className="meta">
                         {fmtTime12(group.start)}
                         {pending ? ` · ${t('statusPending')}` : ' ✓'}
