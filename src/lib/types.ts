@@ -14,8 +14,10 @@ export interface WeekSlot {
   slot_start: string // '08:00'
   slot_end: string // '08:30'
   status: SlotStatus
-  /** True if this 30-min slot is covered by an active booking. No personal data is exposed. */
+  /** True if this 30-min slot is covered by an active booking. */
   taken: boolean
+  /** Kod pendek pelajar (cth. SHU) untuk blok pending. */
+  student_name: string | null
 }
 
 /** Julat masa dipilih (drag/klik) untuk tempahan. */

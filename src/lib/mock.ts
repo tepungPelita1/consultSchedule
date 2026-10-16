@@ -229,6 +229,7 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
           slot_end: end,
           status: isClass ? 'class' : booking ? (booking.status as 'pending' | 'approved') : 'available',
           taken: Boolean(booking),
+          student_name: booking?.student_name ?? null,
         })
       }
     }
