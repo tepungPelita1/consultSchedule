@@ -7,12 +7,13 @@ export type LimitKey = 'student' | 'madam'
 interface LimitState {
   fails: number
   lockedUntil: number
+  lastFail: number
 }
 
 function readLimit(key: LimitKey): LimitState {
-  if (typeof window === 'undefined') return { fails: 0, lockedUntil: 0 }
+  if (typeof window === 'undefined') return { fails: 0, lockedUntil: 0, lastFail: 0 }
   const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${key}`)
-  if (!raw) return { fails: 0, lockedUntil: 0 }
+  if (!raw) return { fails: 0, lockedUntil: 0, lastFail: 0 }
   try {
     const parsed = JSON.parse(raw) as unknown
     if (
@@ -23,12 +24,17 @@ function readLimit(key: LimitKey): LimitState {
       typeof parsed.fails === 'number' &&
       typeof parsed.lockedUntil === 'number'
     ) {
-      return parsed as LimitState
+      const value = parsed as { fails: number; lockedUntil: number; lastFail?: number }
+      return {
+        fails: value.fails,
+        lockedUntil: value.lockedUntil,
+        lastFail: typeof value.lastFail === 'number' ? value.lastFail : 0,
+      }
     }
   } catch {
     // Abaikan data rosak.
   }
-  return { fails: 0, lockedUntil: 0 }
+  return { fails: 0, lockedUntil: 0, lastFail: 0 }
 }
 
 function writeLimit(key: LimitKey, state: LimitState): void {
@@ -45,22 +51,35 @@ export function isLocked(key: LimitKey): boolean {
   return remainingMs(key) > 0
 }
 
+/** Cubaan salah lama dari tempoh ni dianggap "session baharu" dan dikira semula. */
+const FAIL_WINDOW_MS = 15 * 60 * 1000
+
 export function recordFail(key: LimitKey, maxFails: number, lockMs: number): LimitState {
   const state = readLimit(key)
   const now = Date.now()
-  let fails = state.lockedUntil > now ? state.fails : 0
-  fails += 1
+  let fails = state.fails
   let lockedUntil = state.lockedUntil
+
+  // Reset kiraan hanya bila lock dah tamat DAN lama tak cuba.
+  if (lockedUntil <= now && now - state.lastFail > FAIL_WINDOW_MS) {
+    fails = 0
+    lockedUntil = 0
+  }
+
+  fails += 1
+
   if (fails >= maxFails) {
     lockedUntil = now + lockMs
+    fails = 0 // mula semula selepas lock tamat
   }
-  const next: LimitState = { fails, lockedUntil }
+
+  const next: LimitState = { fails, lockedUntil, lastFail: now }
   writeLimit(key, next)
   return next
 }
 
 export function resetLimit(key: LimitKey): void {
-  writeLimit(key, { fails: 0, lockedUntil: 0 })
+  writeLimit(key, { fails: 0, lockedUntil: 0, lastFail: 0 })
 }
 
 function pad2(n: number): string {
