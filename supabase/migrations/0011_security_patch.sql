@@ -246,7 +246,9 @@ begin
       where bucket = v_bucket;
     end if;
 
-    raise exception 'NOT_ALLOWLISTED';
+    -- Return null (bukan raise) supaya insert rate limit tak rollback.
+    -- Client akan anggap null = NOT_ALLOWLISTED.
+    return null;
   end if;
 
   -- ID sah: clear cubaan salah
