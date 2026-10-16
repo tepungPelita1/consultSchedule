@@ -83,21 +83,6 @@ export async function fetchBookings(weekStart: string, pin: string): Promise<Boo
   return data as Booking[]
 }
 
-export async function cancelBookingBySlot(
-  weekStart: string,
-  dayOfWeek: Weekday,
-  slotStart: string,
-  studentId: string,
-): Promise<void> {
-  const { error } = await supabase.rpc('cancel_booking_by_slot', {
-    p_week_start: weekStart,
-    p_day_of_week: dayOfWeek,
-    p_slot_start: slotStart,
-    p_student_id: studentId,
-  })
-  if (error) throw error
-}
-
 /** Minggu (dalam senarai diberi) yang ada tempahan aktif — untuk tab Mod madam. */
 export async function fetchBookingWeeks(weeks: string[]): Promise<string[]> {
   if (weeks.length === 0) return []

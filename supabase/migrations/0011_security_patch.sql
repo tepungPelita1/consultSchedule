@@ -503,50 +503,11 @@ as $$
 $$;
 
 -- =============================================================
--- 7. Cancel tempahan mengikut slot (tanpa expose booking_id)
+-- 7. Buang keupayaan pelajar tarik balik tempahan sendiri
 -- =============================================================
-
-create or replace function public.cancel_booking_by_slot(
-  p_week_start date,
-  p_day_of_week int,
-  p_slot_start time,
-  p_student_id text
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_booking_id uuid;
-  v_student_id text;
-begin
-  if p_student_id !~ '^[0-9]{10}$' then
-    raise exception 'INVALID_STUDENT_ID';
-  end if;
-
-  select bk.id, bk.student_id into v_booking_id, v_student_id
-  from public.bookings bk
-  where bk.week_start = p_week_start
-    and bk.day_of_week = p_day_of_week
-    and bk.status in ('pending', 'approved')
-    and bk.slot_start <= p_slot_start
-    and bk.slot_end > p_slot_start
-  limit 1;
-
-  if v_booking_id is null then
-    raise exception 'BOOKING_NOT_FOUND';
-  end if;
-
-  if v_student_id <> p_student_id then
-    raise exception 'NOT_YOUR_BOOKING';
-  end if;
-
-  delete from public.bookings where id = v_booking_id;
-end;
-$$;
-
+-- Tempahan pending/approved hanya boleh diurus oleh Madam (approve/reject).
 -- Buang RPC lama yang bergantung pada booking_id yang tidak lagi diedarkan.
+
 drop function if exists public.cancel_booking(uuid, text);
 
 -- =============================================================
@@ -560,4 +521,3 @@ grant execute on function public.get_class_blocks(date) to anon, authenticated;
 grant execute on function public.get_active_booking_weeks(text) to anon, authenticated;
 grant execute on function public.get_week_bookings(date, text) to anon, authenticated;
 grant execute on function public.get_week_slots(date) to anon, authenticated;
-grant execute on function public.cancel_booking_by_slot(date, int, time, text) to anon, authenticated;
