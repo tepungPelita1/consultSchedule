@@ -86,7 +86,11 @@ end;
 $$;
 
 -- 1e) Helper: semak PIN + rate limit (3 kali salah / 5 minit)
-create or replace function private.check_madam(p_pin text)
+--     PENTING: drop dulu — CREATE OR REPLACE tak boleh tukar bahasa SQL → plpgsql.
+drop function if exists public.madam_verify(text);
+drop function if exists private.check_madam(text);
+
+create function private.check_madam(p_pin text)
 returns boolean
 language plpgsql
 volatile
@@ -148,7 +152,7 @@ end;
 $$;
 
 -- 1f) Public verify untuk gate UI
-create or replace function public.madam_verify(p_pin text)
+create function public.madam_verify(p_pin text)
 returns boolean
 language plpgsql
 volatile
