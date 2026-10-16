@@ -31,6 +31,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 - **FR-8** Navigasi minggu: ◀ ▶ + "Hari ini".
 - **FR-9** Mod madam (checkbox): approve/reject, tambah/buang kelas tambahan, urus allowlist.
 - **FR-10** i18n EN ⇄ BM + dark mode.
+- **FR-11** Pelajar **tidak boleh** tarik balik tempahan sendiri. Tempahan pending/approved hanya boleh diurus oleh Madam (approve/reject).
 
 ## 5. Peraturan Perniagaan
 - **BR-1** Satu slot = 1 pelajar.
@@ -109,7 +110,7 @@ delete from private.booking_attempts;
 2. Test masuk Mod madam guna PIN `3915`.
 3. Test PIN salah 3 kali → patut lock 5 minit.
 4. Test studentID salah 3 kali → patut lock 10 minit.
-5. Test flow biasa: tempah → approve → cancel.
+5. Test flow biasa: tempah → Madam approve/reject (pelajar tak boleh cancel sendiri).
 
 ### Nota bug yang pernah berlaku
 - Client `src/lib/rateLimit.ts`: `fails` direset setiap cubaan sebelum `lockedUntil` di-set → kiraan tak pernah cukup 3. Sudah dibetulkan — jangan guna semula logik lama.

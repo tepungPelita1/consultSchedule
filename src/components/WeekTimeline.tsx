@@ -145,7 +145,6 @@ interface WeekTimelineProps {
   onBook: (block: FreeBlock) => void
   onAddExtra: (block: FreeBlock) => void
   onRemoveExtra: (id: string) => void
-  onCancelBooking: (slot: WeekSlot) => void
 }
 
 interface DragState {
@@ -162,7 +161,6 @@ function WeekTimeline({
   onBook,
   onAddExtra,
   onRemoveExtra,
-  onCancelBooking,
 }: WeekTimelineProps) {
   const { t } = useI18n()
   const monday = parseISO(weekStart)
@@ -496,34 +494,18 @@ function WeekTimeline({
                       </span>
                     </>
                   )
-                  if (madamMode) {
-                    return (
-                      <div
-                        key={group.key}
-                        className={cn('blk', pending ? 'booked-pending' : 'booked')}
-                        style={{ left: `${left}%`, width: `${width}%` }}
-                        aria-label={`${title} ${fmtTime12(group.start)}`}
-                        onPointerEnter={(event) => showTip(event, { title, detail })}
-                        onPointerUp={(event) => toggleTip(event, { title, detail })}
-                        onPointerLeave={() => setTip(null)}
-                      >
-                        {content}
-                      </div>
-                    )
-                  }
                   return (
-                    <button
+                    <div
                       key={group.key}
-                      type="button"
                       className={cn('blk', pending ? 'booked-pending' : 'booked')}
                       style={{ left: `${left}%`, width: `${width}%` }}
                       aria-label={`${title} ${fmtTime12(group.start)}`}
-                      onClick={() => onCancelBooking(group.slot)}
                       onPointerEnter={(event) => showTip(event, { title, detail })}
+                      onPointerUp={(event) => toggleTip(event, { title, detail })}
                       onPointerLeave={() => setTip(null)}
                     >
                       {content}
-                    </button>
+                    </div>
                   )
                 })}
 
