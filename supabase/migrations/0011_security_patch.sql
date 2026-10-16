@@ -52,6 +52,8 @@ create table if not exists private.booking_attempts (
 alter table private.booking_attempts enable row level security;
 
 -- 1d) Helper: bucket ikut IP (hash, bukan IP mentah)
+--     Utamakan cf-connecting-ip, kemudian x-forwarded-for (IP publik pertama),
+--     kemudian x-real-ip. Skip IP private supaya bucket stabil.
 create or replace function private.client_bucket()
 returns text
 language plpgsql
@@ -61,6 +63,7 @@ as $$
 declare
   v_headers json;
   v_ip text;
+  v_part text;
 begin
   begin
     v_headers := current_setting('request.headers', true)::json;
@@ -69,18 +72,34 @@ begin
   end;
 
   if v_headers is not null then
-    v_ip := coalesce(
-      v_headers->>'cf-connecting-ip',
-      v_headers->>'x-forwarded-for',
-      v_headers->>'x-real-ip'
-    );
+    -- 1) Cloudflare real client IP
+    v_ip := nullif(trim(v_headers->>'cf-connecting-ip'), '');
+
+    -- 2) x-forwarded-for: ambil IP publik pertama
+    if v_ip is null then
+      for v_part in
+        select trim(part)
+        from unnest(string_to_array(coalesce(v_headers->>'x-forwarded-for', ''), ',')) as part
+      loop
+        if v_part <> ''
+           and v_part !~ '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.|::1|f[cd])'
+        then
+          v_ip := v_part;
+          exit;
+        end if;
+      end loop;
+    end if;
+
+    -- 3) x-real-ip
+    if v_ip is null then
+      v_ip := nullif(trim(v_headers->>'x-real-ip'), '');
+    end if;
   end if;
 
   if v_ip is null or length(trim(v_ip)) = 0 then
     v_ip := 'unknown';
   end if;
 
-  v_ip := split_part(v_ip, ',', 1);
   return encode(extensions.digest(v_ip, 'sha256'), 'hex');
 end;
 $$;
