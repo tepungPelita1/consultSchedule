@@ -258,6 +258,10 @@ begin
   if p_day_of_week not between 1 and 5 then
     raise exception 'INVALID_DAY';
   end if;
+  -- Isnin: online sahaja (Madam WFH)
+  if p_day_of_week = 1 and p_mode <> 'online' then
+    raise exception 'MONDAY_ONLINE_ONLY';
+  end if;
   if p_slot_start < '08:00'::time or p_slot_end > '18:00'::time then
     raise exception 'OUT_OF_HOURS';
   end if;
