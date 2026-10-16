@@ -11,6 +11,13 @@ Single-page consultation scheduler (React 19 + Vite + TS + Tailwind v4, Supabase
 - Verify changes with `npm run lint && npm run build` (lint first; there are no tests)
 - Path alias `@` → `src/` (defined in both `vite.config.ts` and `tsconfig.app.json`)
 
+## Deployment
+
+- `staging` is the working branch; `main` is production. Cloudflare Pages auto-deploys from `main`.
+- Pushing only to `staging` does **not** update production. To deploy: `git checkout main && git merge staging && git push origin main && git checkout staging`.
+- Run `supabase/migrations/0011_security_patch.sql` in Supabase SQL Editor after deploy changes. It must use `DROP FUNCTION IF EXISTS` before `CREATE FUNCTION` for `private.check_madam` and `public.madam_verify` (PostgreSQL cannot change function language via `CREATE OR REPLACE`).
+- PIN Mod madam is `3915` (bcrypt hash in `private.app_config`). Rate limits: madam 3 wrong tries / 5 min, student wrong ID 3 tries / 10 min. Client logic lives in `src/lib/rateLimit.ts`; server tables are `private.pin_attempts` and `private.booking_attempts`.
+
 ## Supabase / data layer
 
 - Dual-mode: with `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (copy `.env.example` → `.env`) calls hit real Supabase RPCs; without them `src/lib/mock.ts` serves demo data with fake delays. `isSupabaseConfigured` in `src/lib/supabase.ts` is the gate — every hook in `src/lib/useSchedule.ts` branches on it. Add new data operations in BOTH branches.
