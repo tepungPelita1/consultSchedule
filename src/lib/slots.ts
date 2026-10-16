@@ -68,6 +68,9 @@ export async function bookSlot(input: BookSlotInput): Promise<string> {
     p_mode: input.mode,
   })
   if (error) throw error
+  // book_slot returns null bila student ID takde dalam allowlist.
+  // (Server return null supaya rekod rate limit tak rollback.)
+  if (data === null) throw new Error('NOT_ALLOWLISTED')
   return data as string
 }
 
