@@ -34,7 +34,7 @@ function MadamGate({ onClose, onSuccess }: MadamGateProps) {
         onSuccess(pin)
         onClose()
       } else {
-        recordFail('madam', 3, 10 * 60 * 1000)
+        recordFail('madam', 3, 5 * 60 * 1000)
         if (isLocked('madam')) {
           toast.error(interpolate(t('rateLimitedMadam'), { time: formatCountdown(remainingMs('madam')) }))
         } else {

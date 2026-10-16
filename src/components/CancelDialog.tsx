@@ -27,6 +27,7 @@ type FormValues = z.infer<typeof schema>
 
 function errorMessageKey(message: string): TranslationKey {
   const m = message.toUpperCase()
+  if (m.includes('RATE_LIMITED')) return 'rateLimitedServer'
   if (m.includes('INVALID_STUDENT_ID')) return 'invalidStudentId'
   if (m.includes('NOT_YOUR_BOOKING')) return 'notYourBooking'
   if (m.includes('BOOKING_NOT_FOUND')) return 'bookingNotFound'
@@ -88,7 +89,8 @@ function CancelDialogBody({
     if (locked) return
     try {
       await cancelBooking.mutateAsync({
-        bookingId: slot.booking_id ?? '',
+        dayOfWeek: slot.day_of_week,
+        slotStart: slot.slot_start,
         studentId: values.studentId,
       })
       setSent(true)
@@ -102,7 +104,7 @@ function CancelDialogBody({
         message.toUpperCase().includes('NOT_YOUR_BOOKING') ||
         message.toUpperCase().includes('BOOKING_NOT_FOUND')
       if (isWrong) {
-        recordFail('student', 3, 5 * 60 * 1000)
+        recordFail('student', 3, 10 * 60 * 1000)
         if (isLocked('student')) {
           toast.error(interpolate(t('rateLimitedStudent'), { time: formatCountdown(remainingMs('student')) }))
         } else {
@@ -143,8 +145,6 @@ function CancelDialogBody({
               </h2>
               <p style={{ margin: '6px 0 14px' }}>
                 {dayLabel} · {timeLabel}
-                {slot.student_name ? ` · ${slot.student_name}` : ''}
-                {slot.mode ? ` · ${t(slot.mode === 'online' ? 'online' : 'inperson')}` : ''}
               </p>
               <p className="meta" style={{ margin: '0 0 10px', textTransform: 'none', letterSpacing: '0.02em' }}>
                 {t('cancelBody')}
@@ -208,7 +208,7 @@ function CancelDialog({ open, slot, weekStart, onClose }: CancelDialogProps) {
   if (!open || !slot) return null
   return (
     <CancelDialogBody
-      key={`${slot.booking_id ?? slot.slot_start}-${slot.day_of_week}`}
+      key={`${slot.slot_start}-${slot.day_of_week}`}
       slot={slot}
       weekStart={weekStart}
       onClose={onClose}

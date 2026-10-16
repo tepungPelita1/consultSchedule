@@ -35,6 +35,7 @@ type FormValues = z.infer<typeof schema>
 
 function errorMessageKey(message: string): TranslationKey {
   const m = message.toUpperCase()
+  if (m.includes('RATE_LIMITED')) return 'rateLimitedServer'
   if (m.includes('NOT_ALLOWLISTED')) return 'notAllowlisted'
   if (m.includes('SLOT_TAKEN')) return 'slotTaken'
   if (m.includes('DAILY_LIMIT')) return 'dailyLimit'
@@ -106,7 +107,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
       const message = errorText(err)
       console.error('[book_slot]', err)
       if (message.toUpperCase().includes('NOT_ALLOWLISTED')) {
-        recordFail('student', 3, 5 * 60 * 1000)
+        recordFail('student', 3, 10 * 60 * 1000)
         if (isLocked('student')) {
           toast.error(interpolate(t('rateLimitedStudent'), { time: formatCountdown(remainingMs('student')) }))
         } else {
