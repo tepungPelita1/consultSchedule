@@ -483,7 +483,9 @@ function WeekTimeline({
                   const left = pct(toMinutes(group.start))
                   const width = widthPct(toMinutes(group.end) - toMinutes(group.start))
                   const pending = group.status === 'pending'
-                  const title = t(pending ? 'statusPending' : 'statusApproved')
+                  const title = pending
+                    ? (group.slot.student_name || t('statusPending'))
+                    : t('statusApproved')
                   const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}`
                   const content = (
                     <>
