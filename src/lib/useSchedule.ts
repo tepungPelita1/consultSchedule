@@ -124,6 +124,9 @@ export function useBookRange(weekStart: string) {
       if (!entry) {
         throw new Error('NOT_ALLOWLISTED')
       }
+      if (input.day_of_week === 1 && input.mode !== 'online') {
+        throw new Error('MONDAY_ONLINE_ONLY')
+      }
       // Satu tempahan = satu baris dengan julat penuh.
       mockAddBooking({
         id: `demo-${Date.now()}`,

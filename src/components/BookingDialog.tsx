@@ -36,6 +36,7 @@ type FormValues = z.infer<typeof schema>
 function errorMessageKey(message: string): TranslationKey {
   const m = message.toUpperCase()
   if (m.includes('RATE_LIMITED')) return 'rateLimitedServer'
+  if (m.includes('MONDAY_ONLINE_ONLY')) return 'mondayOnlineOnly'
   if (m.includes('NOT_ALLOWLISTED')) return 'notAllowlisted'
   if (m.includes('SLOT_TAKEN')) return 'slotTaken'
   if (m.includes('DAILY_LIMIT')) return 'dailyLimit'
@@ -65,6 +66,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
   const bookRange = useBookRange(weekStart)
   const [sent, setSent] = useState(false)
   const { locked, text } = useLockCountdown('student')
+  const isMonday = block.day_of_week === 1
 
   const {
     register,
@@ -72,7 +74,7 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { studentId: '', mode: 'inperson' },
+    defaultValues: { studentId: '', mode: isMonday ? 'online' : 'inperson' },
   })
 
   const studentIdField = register('studentId')
@@ -190,18 +192,20 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                   {t('mode')}
                 </legend>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <label
-                    className="pill"
-                    style={{ cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' }}
-                  >
-                    <input
-                      type="radio"
-                      value="inperson"
-                      {...register('mode')}
-                      onClick={(event) => hapticWithFallback(HAPTIC.tap, event.currentTarget)}
-                    />
-                    {t('inperson')}
-                  </label>
+                  {!isMonday && (
+                    <label
+                      className="pill"
+                      style={{ cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' }}
+                    >
+                      <input
+                        type="radio"
+                        value="inperson"
+                        {...register('mode')}
+                        onClick={(event) => hapticWithFallback(HAPTIC.tap, event.currentTarget)}
+                      />
+                      {t('inperson')}
+                    </label>
+                  )}
                   <label
                     className="pill"
                     style={{ cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' }}
@@ -215,6 +219,11 @@ function BookingDialogBody({ block, weekStart, onClose }: BookingDialogBodyProps
                     {t('online')}
                   </label>
                 </div>
+                {isMonday && (
+                  <span className="meta" style={{ display: 'block', marginTop: 6, opacity: 0.75 }}>
+                    {t('mondayOnlineOnly')}
+                  </span>
+                )}
               </fieldset>
 
               <div className="acts">
