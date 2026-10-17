@@ -45,8 +45,9 @@ const WORK_START = 8 * 60
 const WORK_END = 18 * 60
 const WORK_DURATION = WORK_END - WORK_START
 
-// Sentuh: tempoh tahan untuk masuk mod slide, dan jarak masa double tap.
-const LONG_PRESS_MS = 1500
+// Sentuh: tempoh tahan untuk masuk mod slide (700 ms — cukup untuk bezakan
+// dengan scroll biasa tapi tak rasa lambat), dan jarak masa double tap.
+const LONG_PRESS_MS = 700
 const DOUBLE_TAP_MS = 500
 const MOVE_CANCEL_PX = 10
 
