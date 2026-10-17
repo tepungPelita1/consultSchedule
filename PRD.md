@@ -23,9 +23,9 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 ## 4. Keperluan Fungsional
 - **FR-1** Papar minggu melintang: masa di paksi-X (08:00–18:00, 20 kolum 30 min), baris = Isnin–Jumaat.
 - **FR-2** Kelas tetap Madam dipapar sebagai blok teal (kod subjek + masa), tak boleh ditempah.
-- **FR-3** Slot kosong 30 minit antara kelas boleh ditempah.
-- **FR-4** Borang tempah: nama pendek + studentID + mod (Bersemuka/Online).
-- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; tempahan dibuka untuk minggu semasa + 2 minggu ke hadapan (prebooking).
+- **FR-3** Slot kosong 30 minit antara kelas boleh ditempah; pelajar boleh seret satu julat (contoh 1 jam = 2 slot) dan ia disimpan sebagai **satu** tempahan.
+- **FR-4** Borang tempah: studentID (10 digit) + mod (Bersemuka/Online). Nama pendek pelajar diambil dari `allowlist` (`student_name`), bukan ditaip.
+- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; tempahan dibuka untuk minggu semasa + 2 minggu ke hadapan (prebooking); Isnin online sahaja.
 - **FR-6** Tempahan status `pending` → Madam approve/reject.
 - **FR-7** Soft reset mingguan (query ikut `week_start`).
 - **FR-8** Navigasi minggu: ◀ ▶ + "Hari ini".
@@ -36,13 +36,14 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 ## 5. Peraturan Perniagaan
 - **BR-1** Satu slot = 1 pelajar.
 - **BR-2** Max 1 tempahan sehari/pelajar.
-- **BR-3** Tempahan dibuka bagi minggu semasa + 2 minggu ke hadapan (prebooking). Navigasi minggu dihadkan pada tetingkap ini.
+- **BR-3** Tempahan dibuka bagi minggu semasa + 2 minggu ke hadapan (prebooking). Navigasi minggu dihadkan pada tetingkap ini. **Rollover hujung minggu:** mulai 12:00AM Sabtu, minggu semasa terus jadi minggu hadapan (Sabtu & Ahad) — pelajar tidak lagi nampak minggu yang baru tamat.
 - **BR-4** Waktu kerja 08:00–18:00.
 - **BR-5** `pending`/`approved` = penuh; `rejected` kembali kosong.
+- **BR-6** Isnin (`day_of_week = 1`) **online sahaja** (`MONDAY_ONLINE_ONLY`); pilihan Bersemuka disembunyikan pada Isnin.
 
 ## 6. Aliran Pengguna
 1. Pelajar buka `/` → lihat header folder + jadual minggu.
-2. Klik slot kosong → modal → isi nama + studentID + mod → hantar.
+2. Klik/seret slot kosong → modal → isi studentID + mod → hantar.
 3. Sistem sahkan allowlist → simpan `pending`.
 4. Madam buka "Mod madam" → approve/reject; tambah kelas tambahan; urus allowlist.
 5. Slot update (approved = hijau ✓, pending = amber).
@@ -57,7 +58,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 `allowlist(student_id, name)` · `class_blocks(day_of_week, start_time, end_time, label, venue, week_start)` · `bookings(week_start, day_of_week, slot_start, slot_end, student_id, student_name, mode, status)`.
 
 ## 9. Tech Stack
-React + Vite + TS + Tailwind v4 · Supabase (Postgres/RLS/RPC/Realtime) · @tanstack/react-query · react-hook-form + zod · sonner · date-fns · Instrument Sans · Cloudflare Pages.
+React + Vite + TS + Tailwind v4 · Supabase (Postgres/RLS/RPC/Realtime) · @tanstack/react-query · react-hook-form + zod · sonner · date-fns · Instrument Sans · Cloudflare Workers (static assets dari `./dist`, custom domain `consultation.ajamlab.my`).
 
 ## 10. Open Items
 - [ ] Username Telegram Madam (butang "PM Madam").
@@ -68,10 +69,12 @@ Build + lint lulus · jadual render dengan kelas sebenar · booking flow (allowl
 
 ## 12. Deployment & Operasi
 
-### Branch
+### Hosting & branch
+- Hosting: **Cloudflare Workers** (bukan Pages) — servis `consultschedule`, aset statik dari `./dist` (SPA fallback), custom domain `consultation.ajamlab.my`. Konfigurasi dalam `wrangler.jsonc` (`workers_dev: false`).
+- Auto-deploy: **Workers Builds** (GitHub App "Cloudflare Workers and Pages"). Setiap push ke `staging` **atau** `main` mencetuskan build `npm run build` (`tsc -b && vite build`) dan deploy; status muncul sebagai check "Workers Builds: consultschedule" pada commit (merah = tak naik langsung).
+- Hanya branch yang diset sebagai **Production branch** (dashboard: Workers & Pages → `consultschedule` → Settings → Builds) naik ke domain. Build dari branch lain cuma jadi preview version.
 - `staging` — branch kerja. Semua perubahan dibuat di sini dahulu.
-- `main` — production. Cloudflare Pages auto-deploy dari `main`.
-- Selepas siap di `staging`, merge ke `main`:
+- `main` — production. Selepas siap di `staging`, merge ke `main`:
 
 ```bash
 git checkout main
@@ -80,11 +83,18 @@ git push origin main
 git checkout staging
 ```
 
-> Penting: push ke `staging` sahaja **tak** update production. Kena merge ke `main`.
+> Penting: push ke `staging` tetap mencetuskan build. Sahkan setting **Production branch** dalam dashboard — kalau ia diset kepada `staging`, setiap push kerja akan terus ke live.
 
 ### Supabase
-- SQL migrations dalam `supabase/migrations/`: run `0001` → `0011` ikut turutan, kemudian `supabase/seed.sql`.
-- Jangan re-run migration lama — migration lepas redefine fungsi sebelum ini (contoh `0010` book_slot, `0011` security patch).
+- SQL migrations dalam `supabase/migrations/`: run `0001` → `0015` ikut turutan, kemudian `supabase/seed.sql`.
+- Deploy Cloudflare **tak** jalankan SQL — migration kena apply manual di Supabase SQL Editor.
+- Jangan re-run migration lama — migration lepas redefine fungsi sebelum ini (contoh `0010` book_slot, `0011` security patch, `0014` Monday online-only, `0015` weekend rollover).
+
+### Reset mingguan (soft reset)
+- Tiada data dipadam automatik. Tempahan disimpan ikut `week_start`, jadi minggu baru **kosong** dengan sendirinya (semua slot jadi hijau semula).
+- Kelas tetap (`class_blocks.week_start = null`) berulang setiap minggu; kelas tambahan pula ikut minggu tertentu.
+- Minggu yang dah tamat keluar dari tetingkap navigasi (minggu semasa + 2) — tidak boleh dilihat/ditempah lagi.
+- Madam boleh reset sesuatu minggu secara manual: butang **"Reset minggu"** (`t('clearWeek')`) → kosongkan tempahan + kelas tambahan minggu itu (`clear_week_bookings`, `clear_week_extra_classes`), sahkan dengan taip `reset`.
 - `0011_security_patch.sql` mesti guna `DROP FUNCTION` sebelum `CREATE FUNCTION` untuk `public.madam_verify` dan `private.check_madam` — PostgreSQL tak benarkan `CREATE OR REPLACE` tukar bahasa fungsi (SQL → plpgsql).
 - PIN Mod madam: `3915` (hash bcrypt dalam `private.app_config`). Tukar PIN:
 
@@ -115,4 +125,4 @@ delete from private.booking_attempts;
 ### Nota bug yang pernah berlaku
 - Client `src/lib/rateLimit.ts`: `fails` direset setiap cubaan sebelum `lockedUntil` di-set → kiraan tak pernah cukup 3. Sudah dibetulkan — jangan guna semula logik lama.
 - Server: `CREATE OR REPLACE FUNCTION` tak boleh tukar bahasa. Guna `DROP FUNCTION IF EXISTS` dulu.
-- Production deploy dari `main`. Jangan lupa merge `staging` → `main`.
+- Deploy production ikut **Production branch** dalam Workers Builds. Jangan lupa merge `staging` → `main` sebelum lepas ke live.

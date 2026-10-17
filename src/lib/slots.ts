@@ -15,13 +15,18 @@ function klDateParts(): { year: number; month: number; day: number } {
   return { year: get('year'), month: get('month'), day: get('day') }
 }
 
-// Isnin minggu semasa (format YYYY-MM-DD) mengikut Asia/Kuala_Lumpur.
+// Isnin minggu berjalan (format YYYY-MM-DD) mengikut Asia/Kuala_Lumpur.
 // Guna tengah hari untuk elak sebarang isu offset; kita cuma perlukan weekday.
+// Rollover: 12:00AM Sabtu — minggu kerja dah tamat, jadi "minggu semasa" terus
+// jadi minggu hadapan (Sabtu & Ahad). Sama dengan logik book_slot di server
+// (0015_weekend_rollover.sql) — jangan ubah sebelah sahaja.
 export function getCurrentWeekStart(): string {
   const { year, month, day } = klDateParts()
   const base = new Date(year, month - 1, day, 12)
-  const offset = (base.getDay() + 6) % 7 // Mon=0 ... Sun=6
+  const weekday = base.getDay() // 0 = Ahad ... 6 = Sabtu
+  const offset = (weekday + 6) % 7 // Mon=0 ... Sun=6
   base.setDate(base.getDate() - offset)
+  if (weekday === 6 || weekday === 0) base.setDate(base.getDate() + 7)
   return format(base, 'yyyy-MM-dd')
 }
 
