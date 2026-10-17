@@ -72,9 +72,10 @@ Build + lint lulus · jadual render dengan kelas sebenar · booking flow (allowl
 ### Hosting & branch
 - Hosting: **Cloudflare Workers** (bukan Pages) — servis `consultschedule`, aset statik dari `./dist` (SPA fallback), custom domain `consultation.ajamlab.my`. Konfigurasi dalam `wrangler.jsonc` (`workers_dev: false`).
 - Auto-deploy: **Workers Builds** (GitHub App "Cloudflare Workers and Pages"). Setiap push ke `staging` **atau** `main` mencetuskan build `npm run build` (`tsc -b && vite build`) dan deploy; status muncul sebagai check "Workers Builds: consultschedule" pada commit (merah = tak naik langsung).
-- Hanya branch yang diset sebagai **Production branch** (dashboard: Workers & Pages → `consultschedule` → Settings → Builds) naik ke domain. Build dari branch lain cuma jadi preview version.
+- **Production branch sekarang ialah `staging`** (disahkan 17 Okt 2026: selepas push `staging` sahaja, `origin/main` masih di commit lama tetapi laman live terus tukar). Jadi **push ke `staging` = release production**; `main` cuma cermin rujukan.
+- Kalau nak `main` jadi branch release: tukar dalam dashboard (Workers & Pages → `consultschedule` → Settings → Builds), kemudian barulah aliran merge di bawah jadi betul.
 - `staging` — branch kerja. Semua perubahan dibuat di sini dahulu.
-- `main` — production. Selepas siap di `staging`, merge ke `main`:
+- `main` — cermin production. Selepas siap di `staging`, majukan `main` supaya sama:
 
 ```bash
 git checkout main
@@ -83,7 +84,7 @@ git push origin main
 git checkout staging
 ```
 
-> Penting: push ke `staging` tetap mencetuskan build. Sahkan setting **Production branch** dalam dashboard — kalau ia diset kepada `staging`, setiap push kerja akan terus ke live.
+> Penting: **push ke `staging` terus naik ke live** (production branch = `staging`). Jangan push kerja yang belum siap. Kalau nak `staging` jadi ruang ujian sahaja, tukar Production branch kepada `main` dalam dashboard.
 
 ### Supabase
 - SQL migrations dalam `supabase/migrations/`: run `0001` → `0015` ikut turutan, kemudian `supabase/seed.sql`.
@@ -125,4 +126,4 @@ delete from private.booking_attempts;
 ### Nota bug yang pernah berlaku
 - Client `src/lib/rateLimit.ts`: `fails` direset setiap cubaan sebelum `lockedUntil` di-set → kiraan tak pernah cukup 3. Sudah dibetulkan — jangan guna semula logik lama.
 - Server: `CREATE OR REPLACE FUNCTION` tak boleh tukar bahasa. Guna `DROP FUNCTION IF EXISTS` dulu.
-- Deploy production ikut **Production branch** dalam Workers Builds. Jangan lupa merge `staging` → `main` sebelum lepas ke live.
+- Deploy production ikut **Production branch** dalam Workers Builds — sekarang ia `staging`. Jangan push kerja separuh siap ke `staging`; majukan `main` selepas release supaya kedua-dua branch sama.
