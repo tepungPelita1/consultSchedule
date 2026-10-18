@@ -141,7 +141,7 @@ function SchedulePage() {
             </span>
             <span>
               <i className="sw b" />
-              {t('statusApproved')}
+              {t('booked')}
             </span>
           </div>
           <LangToggle />
