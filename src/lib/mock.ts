@@ -222,6 +222,9 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
             toMinutes(b.slot_start) < toMinutes(end) &&
             toMinutes(b.slot_end) > toMinutes(start),
         )
+        const allowlistEntry = booking
+          ? store.allowlist.find((e) => e.student_id === booking.student_id)
+          : undefined
 
         slots.push({
           day_of_week: day,
@@ -230,6 +233,10 @@ export function generateMockSlots(weekStart: string): WeekSlot[] {
           status: isClass ? 'class' : booking ? (booking.status as 'pending' | 'approved') : 'available',
           taken: Boolean(booking),
           student_name: booking?.student_name ?? null,
+          student_full_name:
+            booking?.status === 'approved'
+              ? allowlistEntry?.full_name || booking.student_name
+              : null,
         })
       }
     }
