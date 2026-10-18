@@ -314,11 +314,15 @@ html.theme-switching *::after {
   );
 }
 .sw.bp {
-  background: color-mix(in srgb, var(--amber) 32%, transparent);
+  background: var(--lgreen);
   border-style: dashed;
 }
 .sw.b {
-  background: var(--teal);
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--ink) 20%, transparent) 0 4px,
+    transparent 4px 8px
+  );
 }
 
 /* ------------------------------------------------------------------ *
@@ -412,7 +416,7 @@ html.theme-switching *::after {
 /* day track: relative, background grid lines each 5% (30 min) */
 .trk {
   position: relative;
-  height: 53px; /* 1 lane: 7 + 39 + 7 */
+  height: 62px; /* 1 lane: 7 + 48 + 7 */
   background: repeating-linear-gradient(
     90deg,
     transparent 0 calc(5% - 1px),
@@ -422,7 +426,7 @@ html.theme-switching *::after {
 
 /* 2 lane (Madam + pelajar) kekal tinggi asal staging */
 .trk.two-lane {
-  height: 96px;
+  height: 114px;
 }
 
 /* 1 lane (cth Jumaat): padatkan .dl supaya padan tepat dengan tinggi track 53px */
@@ -446,30 +450,38 @@ html.theme-switching *::after {
   margin: 0;
 }
 
+/* Inset mendatar 4px supaya kad tak sentuh grid / kad bersebelahan */
+.trk .blk.kelas,
+.trk .blk.booked,
+.trk .blk.booked-pending {
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
 /* Dua lane bila jadual Madam & pelajar bertindih: Madam atas, pelajar bawah */
 .trk .blk.lane-top {
   top: 7px;
   bottom: calc(50% + 2px);
-  padding: 4px 7px;
-  gap: 1px;
+  padding: 6px 10px;
+  gap: 2px;
 }
 .trk .blk.lane-bottom {
   top: calc(50% + 2px);
   bottom: 7px;
-  padding: 4px 7px;
-  gap: 1px;
+  padding: 6px 10px;
+  gap: 2px;
 }
 .blk.lane-top b,
 .blk.lane-bottom b {
   font-size: 13px;
 }
 
-/* Kad kelas: tinggi tetap 39px supaya hari 1 lane (Jumaat) tak meregang */
+/* Kad kelas: tinggi tetap supaya hari 1 lane (Jumaat) tak meregang */
 .trk .blk.kelas {
   bottom: auto;
-  height: 39px;
-  padding: 4px 7px;
-  gap: 1px;
+  height: 48px;
+  padding: 6px 10px;
+  gap: 2px;
 }
 
 /* Kelas tambahan/ad-hoc: penuh rentas kedua-dua lane pada hari dua lane */
@@ -532,24 +544,49 @@ html.theme-switching *::after {
     var(--adhoc-dark) 7px 14px
   );
   color: #fff;
+  justify-content: center;
+  align-items: center;
 }
 .booked {
-  background: var(--teal);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--green) 0 7px,
+    color-mix(in srgb, var(--green) 68%, black) 7px 14px
+  );
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  color: var(--ink);
 }
 .booked-pending {
-  background: color-mix(in srgb, var(--amber) 32%, transparent);
+  background: var(--lgreen);
   border-style: dashed;
 }
 
-/* Blok tempahan: ringkas — nama sahaja (masa/butiran pada hover/tap) */
+/* Blok "Booked" / "Adhoc": pill dalam kotak berjalur, tengah-tengah */
 .blk.booked,
 .blk.booked-pending {
-  padding: 6px 5px;
+  padding: 6px 10px;
   justify-content: center;
   align-items: center;
   text-align: center;
+  gap: 3px;
 }
-.blk.booked b,
+.booked-pill,
+.adhoc-pill {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 1px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.booked-pill.vertical,
+.adhoc-pill.vertical {
+  transform: rotate(90deg);
+}
 .blk.booked-pending b {
   font-size: 12px;
   white-space: nowrap;
@@ -557,7 +594,6 @@ html.theme-switching *::after {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.blk.booked .meta,
 .blk.booked-pending .meta {
   display: none;
 }

@@ -1,7 +1,7 @@
 import { addDays, format, getDate, isSameDay, parseISO } from 'date-fns'
 import { enUS, ms as msLocale } from 'date-fns/locale'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import type { PointerEvent as ReactPointerEvent, TouchEvent as ReactTouchEvent } from 'react'
 import { HAPTIC, haptic, hapticWithFallback } from '@/lib/haptic'
 import type { TranslationKey } from '@/lib/i18n'
 import { interpolate, useI18n } from '@/lib/i18n'
@@ -39,6 +39,10 @@ function fmtTime12(time: string): string {
   const ampm = h >= 12 ? 'PM' : 'AM'
   const hour = h % 12 === 0 ? 12 : h % 12
   return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
+function fmtRange12(start: string, end: string): string {
+  return `${fmtTime12(start).replace(/ (AM|PM)$/, '')} - ${fmtTime12(end)}`
 }
 
 const WORK_START = 8 * 60
@@ -181,6 +185,7 @@ function WeekTimeline({
   const holdingRef = useRef(false)
   const suppressingClickRef = useRef(false)
   const touchStartRef = useRef<{ sx: number; sy: number; time: number; becomeDrag: boolean } | null>(null)
+  const pressTipRef = useRef<number | null>(null)
 
   const commitDrag = useCallback((next: DragState) => {
     dragRef.current = next
@@ -226,17 +231,25 @@ function WeekTimeline({
     setTip({ ...data, x: event.clientX, y: event.clientY })
   }
 
-  // Peranti sentuh: tap untuk tunjuk/mati tooltip nama penuh.
-  const toggleTip = (
-    event: ReactPointerEvent,
+  // Sentuh: tahan ~600ms pada blok booked/pending untuk tunjuk tooltip nama.
+  const startPressTip = (
+    event: ReactTouchEvent,
     data: { title: string; detail: string },
   ) => {
-    if (event.pointerType === 'mouse') return
-    setTip((current) =>
-      current && current.title === data.title && current.detail === data.detail
-        ? null
-        : { ...data, x: event.clientX, y: event.clientY },
-    )
+    if (pressTipRef.current !== null) window.clearTimeout(pressTipRef.current)
+    const touch = event.touches[0]
+    if (!touch) return
+    pressTipRef.current = window.setTimeout(() => {
+      pressTipRef.current = null
+      setTip({ ...data, x: touch.clientX, y: touch.clientY })
+    }, 600)
+  }
+
+  const cancelPressTip = () => {
+    if (pressTipRef.current !== null) {
+      window.clearTimeout(pressTipRef.current)
+      pressTipRef.current = null
+    }
   }
 
   useEffect(() => {
@@ -249,6 +262,10 @@ function WeekTimeline({
       if (longPressRef.current !== null) {
         window.clearTimeout(longPressRef.current)
         longPressRef.current = null
+      }
+      if (pressTipRef.current !== null) {
+        window.clearTimeout(pressTipRef.current)
+        pressTipRef.current = null
       }
     }
     window.addEventListener('pointerup', clear)
@@ -414,21 +431,27 @@ function WeekTimeline({
                   ...madamClasses.filter((b) => b.week_start != null).map((block) => ({ block, student: false })),
                 ].map(({ block, student }) => {
                   const left = pct(toMinutes(block.start_time))
-                  const width = widthPct(toMinutes(block.end_time) - toMinutes(block.start_time))
+                  const right = 100 - pct(toMinutes(block.end_time))
                   const isAdhoc = block.week_start != null
                   const canRemove = isAdhoc && madamMode
+                  const adhocNarrow =
+                    isAdhoc && toMinutes(block.end_time) - toMinutes(block.start_time) <= 30
                   // Kelas tambahan penuh rentas track; kelas tetap kekal dalam lane.
                   const laneClass = isAdhoc ? undefined : twoLane ? (student ? 'lane-bottom' : 'lane-top') : undefined
 
                   const style = {
                     left: `${left}%`,
-                    width: `${width}%`,
+                    right: `${right}%`,
                     ...(student ? { background: subjectColor(block.label) } : null),
                   }
 
-                  const content = (
+                  const content = isAdhoc ? (
+                    <span className={cn('adhoc-pill', adhocNarrow && 'vertical')}>
+                      {t('adhocLabel')}
+                    </span>
+                  ) : (
                     <>
-                      <b>{isAdhoc ? block.label || t('adhocLabel') : block.label || t('legendClass')}</b>
+                      <b>{block.label || t('legendClass')}</b>
                       <span className="meta">
                         {fmtTime12(block.start_time)}
                         {block.venue ? ` · ${block.venue}` : ''}
@@ -482,35 +505,60 @@ function WeekTimeline({
 
                 {bookedGroups.map((group) => {
                   const left = pct(toMinutes(group.start))
-                  const width = widthPct(toMinutes(group.end) - toMinutes(group.start))
+                  const right = 100 - pct(toMinutes(group.end))
                   const pending = group.status === 'pending'
+                  const timeRange = fmtRange12(group.start, group.end)
                   const blockLabel = pending
                     ? (group.slot.student_name || t('statusPending'))
-                    : t('statusApproved')
-                  const tipTitle = pending
-                    ? blockLabel
-                    : (group.slot.student_full_name || t('statusApproved'))
-                  const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}`
-                  const content = (
-                    <>
-                      <b>{blockLabel}</b>
-                      <span className="meta">
-                        {fmtTime12(group.start)}
-                        {pending ? ` · ${t('statusPending')}` : ' ✓'}
-                      </span>
-                    </>
-                  )
+                    : t('booked')
+                  const tipData = pending
+                    ? { title: blockLabel, detail: '' }
+                    : {
+                        title: group.slot.student_full_name || t('booked'),
+                        detail: timeRange,
+                      }
+
+                  if (!pending) {
+                    const narrow = toMinutes(group.end) - toMinutes(group.start) <= 30
+                    return (
+                      <div
+                        key={group.key}
+                        className="blk booked"
+                        style={{ left: `${left}%`, right: `${right}%` }}
+                        aria-label={`${t('booked')}: ${tipData.title} · ${timeRange}`}
+                        tabIndex={0}
+                        onPointerEnter={(event) => showTip(event, tipData)}
+                        onPointerLeave={() => setTip(null)}
+                        onTouchStart={(event) => startPressTip(event, tipData)}
+                        onTouchMove={cancelPressTip}
+                        onTouchEnd={cancelPressTip}
+                        onTouchCancel={cancelPressTip}
+                      >
+                        <span className={cn('booked-pill', narrow && 'vertical')}>
+                          {t('booked')}
+                        </span>
+                      </div>
+                    )
+                  }
+
                   return (
                     <div
                       key={group.key}
-                      className={cn('blk', pending ? 'booked-pending' : 'booked')}
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                      aria-label={`${blockLabel} ${fmtTime12(group.start)}`}
-                      onPointerEnter={(event) => showTip(event, { title: tipTitle, detail })}
-                      onPointerUp={(event) => toggleTip(event, { title: tipTitle, detail })}
+                      className="blk booked-pending"
+                      style={{ left: `${left}%`, right: `${right}%` }}
+                      aria-label={`${blockLabel} · ${t('statusPending')} · ${timeRange}`}
+                      tabIndex={0}
+                      onPointerEnter={(event) => showTip(event, tipData)}
                       onPointerLeave={() => setTip(null)}
+                      onTouchStart={(event) => startPressTip(event, tipData)}
+                      onTouchMove={cancelPressTip}
+                      onTouchEnd={cancelPressTip}
+                      onTouchCancel={cancelPressTip}
                     >
-                      {content}
+                      <b>{blockLabel}</b>
+                      <span className="meta">
+                        {timeRange} · {t('statusPending')}
+                      </span>
                     </div>
                   )
                 })}
@@ -674,7 +722,7 @@ function WeekTimeline({
       {tip && (
         <div className="slot-tip" style={{ left: tip.x, top: tip.y }}>
           <b>{tip.title}</b>
-          <div>{tip.detail}</div>
+          {tip.detail ? <div>{tip.detail}</div> : null}
         </div>
       )}
     </div>
