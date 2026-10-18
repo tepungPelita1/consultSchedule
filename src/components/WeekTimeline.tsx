@@ -508,45 +508,35 @@ function WeekTimeline({
                   const right = 100 - pct(toMinutes(group.end))
                   const pending = group.status === 'pending'
                   const timeRange = fmtRange12(group.start, group.end)
-                  const blockLabel = pending
-                    ? (group.slot.student_name || t('statusPending'))
-                    : t('booked')
-                  const tipData = pending
-                    ? { title: blockLabel, detail: '' }
-                    : {
-                        title: group.slot.student_full_name || t('booked'),
-                        detail: timeRange,
-                      }
 
-                  if (!pending) {
+                  if (pending) {
+                    const blockLabel = group.slot.student_name || t('statusPending')
                     const narrow = toMinutes(group.end) - toMinutes(group.start) <= 30
                     return (
                       <div
                         key={group.key}
-                        className="blk booked"
+                        className={cn('blk booked-pending', narrow && 'narrow')}
                         style={{ left: `${left}%`, right: `${right}%` }}
-                        aria-label={`${t('booked')}: ${tipData.title} · ${timeRange}`}
-                        tabIndex={0}
-                        onPointerEnter={(event) => showTip(event, tipData)}
-                        onPointerLeave={() => setTip(null)}
-                        onTouchStart={(event) => startPressTip(event, tipData)}
-                        onTouchMove={cancelPressTip}
-                        onTouchEnd={cancelPressTip}
-                        onTouchCancel={cancelPressTip}
+                        aria-label={`${blockLabel} · ${t('statusPending')} · ${timeRange}`}
                       >
-                        <span className={cn('booked-pill', narrow && 'vertical')}>
-                          {t('booked')}
+                        {/* Label sentiasa mendatar (jangan rotate walaupun blok sempit) */}
+                        <b>{blockLabel}</b>
+                        <span className="meta">
+                          {timeRange} · {t('statusPending')}
                         </span>
                       </div>
                     )
                   }
 
+                  const narrow = toMinutes(group.end) - toMinutes(group.start) <= 30
+                  const tipTitle = group.slot.student_full_name || t('booked')
+                  const tipData = { title: tipTitle, detail: timeRange }
                   return (
                     <div
                       key={group.key}
-                      className="blk booked-pending"
+                      className="blk booked"
                       style={{ left: `${left}%`, right: `${right}%` }}
-                      aria-label={`${blockLabel} · ${t('statusPending')} · ${timeRange}`}
+                      aria-label={`${t('booked')}: ${tipTitle} · ${timeRange}`}
                       tabIndex={0}
                       onPointerEnter={(event) => showTip(event, tipData)}
                       onPointerLeave={() => setTip(null)}
@@ -555,9 +545,8 @@ function WeekTimeline({
                       onTouchEnd={cancelPressTip}
                       onTouchCancel={cancelPressTip}
                     >
-                      <b>{blockLabel}</b>
-                      <span className="meta">
-                        {timeRange} · {t('statusPending')}
+                      <span className={cn('booked-pill', narrow && 'vertical')}>
+                        {t('booked')}
                       </span>
                     </div>
                   )
