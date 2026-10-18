@@ -319,9 +319,9 @@ html.theme-switching *::after {
 }
 .sw.b {
   background: repeating-linear-gradient(
-    45deg,
-    color-mix(in srgb, var(--ink) 20%, transparent) 0 4px,
-    transparent 4px 8px
+    -45deg,
+    var(--green) 0 4px,
+    color-mix(in srgb, var(--green) 68%, black) 4px 8px
   );
 }
 
@@ -590,9 +590,17 @@ html.theme-switching *::after {
 .blk.booked-pending b {
   font-size: 12px;
   white-space: nowrap;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+/* Blok 30 minit: kurangkan padding mendatar supaya kod pendek (SHU)
+   kekal mendatar & terbaca penuh — bukan dirotasi/dipotong. */
+.blk.booked-pending.narrow {
+  padding-left: 3px;
+  padding-right: 3px;
 }
 .blk.booked-pending .meta {
   display: none;
