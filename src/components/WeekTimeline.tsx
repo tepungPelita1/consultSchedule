@@ -484,13 +484,16 @@ function WeekTimeline({
                   const left = pct(toMinutes(group.start))
                   const width = widthPct(toMinutes(group.end) - toMinutes(group.start))
                   const pending = group.status === 'pending'
-                  const title = pending
+                  const blockLabel = pending
                     ? (group.slot.student_name || t('statusPending'))
                     : t('statusApproved')
+                  const tipTitle = pending
+                    ? blockLabel
+                    : (group.slot.student_full_name || t('statusApproved'))
                   const detail = `${fmtTime12(group.start)} – ${fmtTime12(group.end)}`
                   const content = (
                     <>
-                      <b>{title}</b>
+                      <b>{blockLabel}</b>
                       <span className="meta">
                         {fmtTime12(group.start)}
                         {pending ? ` · ${t('statusPending')}` : ' ✓'}
@@ -502,9 +505,9 @@ function WeekTimeline({
                       key={group.key}
                       className={cn('blk', pending ? 'booked-pending' : 'booked')}
                       style={{ left: `${left}%`, width: `${width}%` }}
-                      aria-label={`${title} ${fmtTime12(group.start)}`}
-                      onPointerEnter={(event) => showTip(event, { title, detail })}
-                      onPointerUp={(event) => toggleTip(event, { title, detail })}
+                      aria-label={`${blockLabel} ${fmtTime12(group.start)}`}
+                      onPointerEnter={(event) => showTip(event, { title: tipTitle, detail })}
+                      onPointerUp={(event) => toggleTip(event, { title: tipTitle, detail })}
                       onPointerLeave={() => setTip(null)}
                     >
                       {content}

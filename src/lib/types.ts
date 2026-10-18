@@ -18,6 +18,8 @@ export interface WeekSlot {
   taken: boolean
   /** Kod pendek pelajar (cth. SHU) untuk blok pending. */
   student_name: string | null
+  /** Nama penuh pelajar — hanya diisi untuk blok approved (paparan hover). */
+  student_full_name: string | null
 }
 
 /** Julat masa dipilih (drag/klik) untuk tempahan. */
