@@ -2,6 +2,7 @@ import { addDays, format, parseISO } from 'date-fns'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import BookingDialog from '@/components/BookingDialog'
+import CancelDialog from '@/components/CancelDialog'
 import LangToggle from '@/components/LangToggle'
 import MadamGate from '@/components/MadamGate'
 import MadamPanel from '@/components/ModMadam'
@@ -9,7 +10,7 @@ import { FolderHeader, WeekTimeline } from '@/components/WeekTimeline'
 import { interpolate, useI18n } from '@/lib/i18n'
 import { getBookableWeeks, getCurrentWeekStart, getMaxBookableWeekStart } from '@/lib/slots'
 import { useAddExtraClass, useRemoveExtraClass, useWeekView } from '@/lib/useSchedule'
-import type { FreeBlock } from '@/lib/types'
+import type { FreeBlock, WeekSlot } from '@/lib/types'
 import { weekRangeLabel } from '@/lib/utils'
 
 function SchedulePage() {
@@ -26,6 +27,7 @@ function SchedulePage() {
   )
   const [gateOpen, setGateOpen] = useState(false)
   const [selected, setSelected] = useState<FreeBlock | null>(null)
+  const [cancelSlot, setCancelSlot] = useState<WeekSlot | null>(null)
 
   const { slots, classBlocks, isLoading, error, refetch } = useWeekView(weekStart)
   const addExtra = useAddExtraClass(weekStart)
@@ -168,6 +170,7 @@ function SchedulePage() {
           onBook={setSelected}
           onAddExtra={(block) => void handleAddExtra(block)}
           onRemoveExtra={(id) => void handleRemoveExtra(id)}
+          onCancelBooking={setCancelSlot}
         />
       )}
 
@@ -205,6 +208,13 @@ function SchedulePage() {
         block={selected}
         weekStart={weekStart}
         onClose={() => setSelected(null)}
+      />
+
+      <CancelDialog
+        open={cancelSlot !== null}
+        slot={cancelSlot}
+        weekStart={weekStart}
+        onClose={() => setCancelSlot(null)}
       />
 
       {gateOpen && (

@@ -7,6 +7,7 @@ import {
   mockAddAllowlist,
   mockAddBooking,
   mockAddExtraClass,
+  mockCancelBookingBySlot,
   mockClearWeekBookings,
   mockClearWeekExtraClasses,
   mockRemoveAllowlist,
@@ -17,6 +18,7 @@ import {
   addAllowlistEntry,
   addExtraClass,
   bookSlot,
+  cancelBookingBySlot,
   clearWeekBookings,
   clearWeekExtraClasses,
   fetchAllowlist,
@@ -124,9 +126,6 @@ export function useBookRange(weekStart: string) {
       if (!entry) {
         throw new Error('NOT_ALLOWLISTED')
       }
-      if (input.day_of_week === 1 && input.mode !== 'online') {
-        throw new Error('MONDAY_ONLINE_ONLY')
-      }
       // Satu tempahan = satu baris dengan julat penuh.
       mockAddBooking({
         id: `demo-${Date.now()}`,
@@ -140,6 +139,33 @@ export function useBookRange(weekStart: string) {
         status: 'pending',
         created_at: new Date().toISOString(),
       })
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
+      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
+    },
+  })
+}
+
+export function useCancelBooking(weekStart: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      dayOfWeek,
+      slotStart,
+      studentId,
+    }: {
+      dayOfWeek: Weekday
+      slotStart: string
+      studentId: string
+    }): Promise<void> => {
+      if (isSupabaseConfigured) {
+        return cancelBookingBySlot(weekStart, dayOfWeek, slotStart, studentId)
+      }
+      await delay(200)
+      mockCancelBookingBySlot(weekStart, dayOfWeek, slotStart, studentId)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })

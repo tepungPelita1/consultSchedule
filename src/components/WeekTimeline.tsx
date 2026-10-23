@@ -150,6 +150,7 @@ interface WeekTimelineProps {
   onBook: (block: FreeBlock) => void
   onAddExtra: (block: FreeBlock) => void
   onRemoveExtra: (id: string) => void
+  onCancelBooking: (slot: WeekSlot) => void
 }
 
 interface DragState {
@@ -166,6 +167,7 @@ function WeekTimeline({
   onBook,
   onAddExtra,
   onRemoveExtra,
+  onCancelBooking,
 }: WeekTimelineProps) {
   const { t } = useI18n()
   const monday = parseISO(weekStart)
@@ -512,19 +514,39 @@ function WeekTimeline({
                   if (pending) {
                     const blockLabel = group.slot.student_name || t('statusPending')
                     const narrow = toMinutes(group.end) - toMinutes(group.start) <= 30
-                    return (
-                      <div
-                        key={group.key}
-                        className={cn('blk booked-pending', narrow && 'narrow')}
-                        style={{ left: `${left}%`, right: `${right}%` }}
-                        aria-label={`${blockLabel} · ${t('statusPending')} · ${timeRange}`}
-                      >
+                    const aria = `${blockLabel} · ${t('statusPending')} · ${timeRange}`
+                    const content = (
+                      <>
                         {/* Label sentiasa mendatar (jangan rotate walaupun blok sempit) */}
                         <b>{blockLabel}</b>
                         <span className="meta">
                           {timeRange} · {t('statusPending')}
                         </span>
-                      </div>
+                      </>
+                    )
+                    if (madamMode) {
+                      return (
+                        <div
+                          key={group.key}
+                          className={cn('blk booked-pending', narrow && 'narrow')}
+                          style={{ left: `${left}%`, right: `${right}%` }}
+                          aria-label={aria}
+                        >
+                          {content}
+                        </div>
+                      )
+                    }
+                    return (
+                      <button
+                        key={group.key}
+                        type="button"
+                        className={cn('blk booked-pending', narrow && 'narrow')}
+                        style={{ left: `${left}%`, right: `${right}%` }}
+                        aria-label={aria}
+                        onClick={() => onCancelBooking(group.slot)}
+                      >
+                        {content}
+                      </button>
                     )
                   }
 

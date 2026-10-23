@@ -25,13 +25,13 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 - **FR-2** Kelas tetap Madam dipapar sebagai blok teal (kod subjek + masa), tak boleh ditempah.
 - **FR-3** Slot kosong 30 minit antara kelas boleh ditempah; pelajar boleh seret satu julat (contoh 1 jam = 2 slot) dan ia disimpan sebagai **satu** tempahan.
 - **FR-4** Borang tempah: studentID (10 digit) + mod (Bersemuka/Online). Nama pendek pelajar diambil dari `allowlist` (`student_name`), bukan ditaip.
-- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; tempahan dibuka untuk minggu semasa + 2 minggu ke hadapan (prebooking); Isnin online sahaja.
+- **FR-5** Validasi: studentID mesti ada dalam `allowlist`; max 1 tempahan sehari; tempahan dibuka untuk minggu semasa + 2 minggu ke hadapan (prebooking).
 - **FR-6** Tempahan status `pending` → Madam approve/reject.
 - **FR-7** Soft reset mingguan (query ikut `week_start`).
 - **FR-8** Navigasi minggu: ◀ ▶ + "Hari ini".
 - **FR-9** Mod madam (checkbox): approve/reject, tambah/buang kelas tambahan, urus allowlist.
 - **FR-10** i18n EN ⇄ BM + dark mode.
-- **FR-11** Pelajar **tidak boleh** tarik balik tempahan sendiri. Tempahan pending/approved hanya boleh diurus oleh Madam (approve/reject).
+- **FR-11** Pelajar **boleh** batalkan tempahan sendiri (dengan studentID) selagi status masih `pending`. Selepas `approved`, hanya Madam boleh urus (reject/clear).
 
 ## 5. Peraturan Perniagaan
 - **BR-1** Satu slot = 1 pelajar.
@@ -39,7 +39,7 @@ Sistem jadual konsultasi untuk seorang penyelia (Madam Idayati). Jadual kelas te
 - **BR-3** Tempahan dibuka bagi minggu semasa + 2 minggu ke hadapan (prebooking). Navigasi minggu dihadkan pada tetingkap ini. **Rollover hujung minggu:** mulai 12:00AM Sabtu, minggu semasa terus jadi minggu hadapan (Sabtu & Ahad) — pelajar tidak lagi nampak minggu yang baru tamat.
 - **BR-4** Waktu kerja 08:00–18:00.
 - **BR-5** `pending`/`approved` = penuh; `rejected` kembali kosong.
-- **BR-6** Isnin (`day_of_week = 1`) **online sahaja** (`MONDAY_ONLINE_ONLY`); pilihan Bersemuka disembunyikan pada Isnin.
+- **BR-6** Isnin (`day_of_week = 1`) boleh pilih Bersemuka atau Online — sama seperti hari lain (sekatan online-sahaja dibuang).
 
 ## 6. Aliran Pengguna
 1. Pelajar buka `/` → lihat header folder + jadual minggu.
@@ -87,9 +87,9 @@ git checkout staging
 > Penting: **push ke `staging` terus naik ke live** (production branch = `staging`). Jangan push kerja yang belum siap. Kalau nak `staging` jadi ruang ujian sahaja, tukar Production branch kepada `main` dalam dashboard.
 
 ### Supabase
-- SQL migrations dalam `supabase/migrations/`: run `0001` → `0015` ikut turutan, kemudian `supabase/seed.sql`.
+- SQL migrations dalam `supabase/migrations/`: run `0001` → `0018` ikut turutan, kemudian `supabase/seed.sql`.
 - Deploy Cloudflare **tak** jalankan SQL — migration kena apply manual di Supabase SQL Editor.
-- Jangan re-run migration lama — migration lepas redefine fungsi sebelum ini (contoh `0010` book_slot, `0011` security patch, `0014` Monday online-only, `0015` weekend rollover).
+- Jangan re-run migration lama — migration lepas redefine fungsi sebelum ini (contoh `0010` book_slot, `0011` security patch, `0015` weekend rollover, `0017` restore mod Isnin, `0018` cancel pending).
 
 ### Reset mingguan (soft reset)
 - Tiada data dipadam automatik. Tempahan disimpan ikut `week_start`, jadi minggu baru **kosong** dengan sendirinya (semua slot jadi hijau semula).
@@ -121,7 +121,7 @@ delete from private.booking_attempts;
 2. Test masuk Mod madam guna PIN `3915`.
 3. Test PIN salah 3 kali → patut lock 5 minit.
 4. Test studentID salah 3 kali → patut lock 10 minit.
-5. Test flow biasa: tempah → Madam approve/reject (pelajar tak boleh cancel sendiri).
+5. Test flow biasa: tempah → pelajar boleh cancel sendiri (status `pending`) → Madam approve/reject (selepas approve pelajar tak boleh cancel).
 
 ### Nota bug yang pernah berlaku
 - Client `src/lib/rateLimit.ts`: `fails` direset setiap cubaan sebelum `lockedUntil` di-set → kiraan tak pernah cukup 3. Sudah dibetulkan — jangan guna semula logik lama.
