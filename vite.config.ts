@@ -11,6 +11,14 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // Windows kadang tolak bind ke IPv6 loopback (::1) dengan EACCES.
+    // Paksa IPv4 sahaja supaya dev server sentiasa boleh dengar.
+    host: '127.0.0.1',
+    // 5173 berada dalam julat port "reserved" Windows (5141–5240, Hyper-V),
+    // jadi guna port di luar julat itu.
+    port: 3000,
+  },
   build: {
     rolldownOptions: {
       output: {

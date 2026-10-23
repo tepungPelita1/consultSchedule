@@ -151,6 +151,32 @@ export function mockCancelBooking(id: string): void {
   store.bookings = store.bookings.filter((b) => b.id !== id)
 }
 
+export function mockCancelBookingBySlot(
+  weekStart: string,
+  dayOfWeek: Weekday,
+  slotStart: string,
+  studentId: string,
+): void {
+  const booking = store.bookings.find(
+    (b) =>
+      b.week_start === weekStart &&
+      b.day_of_week === dayOfWeek &&
+      (b.status === 'pending' || b.status === 'approved') &&
+      toMinutes(b.slot_start) <= toMinutes(slotStart) &&
+      toMinutes(b.slot_end) > toMinutes(slotStart),
+  )
+  if (!booking) {
+    throw new Error('BOOKING_NOT_FOUND')
+  }
+  if (booking.student_id !== studentId) {
+    throw new Error('NOT_YOUR_BOOKING')
+  }
+  if (booking.status !== 'pending') {
+    throw new Error('ALREADY_APPROVED')
+  }
+  mockCancelBooking(booking.id)
+}
+
 export function mockSetStatus(id: string, status: Booking['status']): void {
   store.bookings = store.bookings.map((b) => (b.id === id ? { ...b, status } : b))
 }
