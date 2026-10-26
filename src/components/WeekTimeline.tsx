@@ -400,7 +400,12 @@ function WeekTimeline({
             }
             const key = `${s.status}-${s.taken}-${s.slot_start}`
             const last = bookedGroups[bookedGroups.length - 1]
-            if (last && last.status === s.status && last.end === s.slot_start) {
+            if (
+              last &&
+              last.status === s.status &&
+              last.end === s.slot_start &&
+              last.slot.student_name === s.student_name
+            ) {
               last.end = s.slot_end
             } else {
               bookedGroups.push({
