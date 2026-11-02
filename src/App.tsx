@@ -16,31 +16,48 @@ const queryClient = new QueryClient({
 
 type View = 'schedule' | 'rank'
 
-/** Routing hash ringkas: `#rank` = papan markah, selain itu = jadual. */
+/** Routing hash ringkas: `#rank` = papan markah, selain itu (termasuk URL bersih) = jadual. */
 const viewFromHash = (): View => (window.location.hash === '#rank' ? 'rank' : 'schedule')
 
-function useHashView(): View {
+function useHashView(): [View, (next: View) => void] {
   const [view, setView] = useState<View>(viewFromHash)
   useEffect(() => {
-    const onHash = () => {
+    const onNav = () => {
       setView(viewFromHash())
       window.scrollTo(0, 0)
     }
-    window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    // popstate: butang Back dari URL bersih (pushState) ke #rank & sebaliknya.
+    window.addEventListener('hashchange', onNav)
+    window.addEventListener('popstate', onNav)
+    return () => {
+      window.removeEventListener('hashchange', onNav)
+      window.removeEventListener('popstate', onNav)
+    }
   }, [])
-  return view
+
+  const go = (next: View) => {
+    if (next === 'rank') {
+      window.location.hash = 'rank'
+      return
+    }
+    // Jadual = URL bersih (tanpa #schedule).
+    window.history.pushState(null, '', window.location.pathname + window.location.search)
+    setView('schedule')
+    window.scrollTo(0, 0)
+  }
+
+  return [view, go]
 }
 
 function App() {
-  const view = useHashView()
+  const [view, go] = useHashView()
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         {view === 'rank' ? (
-          <LeaderboardPage onBack={() => (window.location.hash = 'schedule')} />
+          <LeaderboardPage onBack={() => go('schedule')} />
         ) : (
-          <SchedulePage onShowRank={() => (window.location.hash = 'rank')} />
+          <SchedulePage onShowRank={() => go('rank')} />
         )}
         <Toaster
           position="top-center"
