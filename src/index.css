@@ -1094,3 +1094,437 @@ html.theme-switching *::after {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Papan markah ("Show rank") — leaderboard-spec.md §5–§7
+ * ------------------------------------------------------------------ */
+:root {
+  --rk-line: color-mix(in srgb, var(--ink) 16%, var(--paper));
+  --rk-muted: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --rk-off: color-mix(in srgb, var(--ink) 11%, var(--paper));
+  --rk-hero-ink: #1b1b1b;
+  --rk-booked: #f0b36e;
+}
+
+.rank-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--yellow);
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rank-btn:hover {
+  background: color-mix(in srgb, var(--yellow) 18%, transparent);
+}
+
+.rk-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rk-muted {
+  color: var(--rk-muted);
+}
+
+/* Bar musim */
+.rk-season {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.rk-season-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rk-seg {
+  display: flex;
+  gap: 3px;
+}
+.rk-seg i {
+  flex: 1;
+  height: 7px;
+  border-radius: 3px;
+  background: var(--rk-off);
+}
+.rk-seg i.d {
+  background: var(--yellow);
+}
+.rk-seg i.c {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--yellow);
+}
+
+.rk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.rk-left,
+.rk-right {
+  min-width: 0;
+}
+
+/* Podium */
+.rk-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+.rk-pc {
+  flex: 0 1 104px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.rk-pc b {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rk-pc small {
+  font-size: 11px;
+  color: var(--rk-muted);
+}
+.rk-crown {
+  display: block;
+  flex: none;
+}
+.rk-crown-gap {
+  display: block;
+  height: 19.5px;
+}
+.rk-dots {
+  display: flex;
+  gap: 2px;
+  margin: 5px 0 7px;
+}
+.rk-dots i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rk-off);
+}
+.rk-dots i.on {
+  background: var(--sc);
+}
+.rk-stage {
+  background: var(--card);
+  border: 1px solid var(--rk-line);
+  border-radius: 12px;
+  padding: 16px 12px 0;
+  overflow: hidden;
+}
+.rk-podium {
+  border-bottom: 1.5px solid var(--ink);
+}
+.rk-bar {
+  width: 100%;
+  border: 1.5px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--sc);
+  color: var(--rk-hero-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 9px;
+}
+.rk-bar-no {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+}
+.rk-bar-stat {
+  display: grid;
+  justify-items: center;
+  line-height: 1.1;
+}
+.rk-bar-stat strong {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rk-bar-stat span {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.rk-bar-fire {
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, #fff 55%, transparent);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+/* Bar #3 rendah: sembunyi streak supaya tak sesak */
+.rk-pc:first-child .rk-bar-fire {
+  display: none;
+}
+
+/* Sorotan musim */
+.rk-high {
+  margin-top: 12px;
+  background: var(--card);
+  border: 1px solid var(--rk-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.rk-high h2 {
+  margin: 0 0 8px;
+  color: var(--rk-muted);
+}
+.rk-high dl {
+  margin: 0;
+  display: grid;
+}
+.rk-high dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.rk-high dl > div + div {
+  border-top: 1px solid var(--rk-line);
+}
+.rk-high dt {
+  color: var(--rk-muted);
+}
+.rk-high dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+}
+.rk-tw {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.rk-tw-dots {
+  display: flex;
+  gap: 3px;
+}
+.rk-tw-dots i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--rk-muted);
+}
+.rk-tw-dots i.on {
+  border: 1.5px solid var(--ink);
+  background: var(--sc);
+}
+
+.rk-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--sc);
+  color: var(--rk-hero-ink);
+  font-weight: 600;
+  font-size: 14px;
+}
+.rk-av.lg {
+  width: 46px;
+  height: 46px;
+  font-size: 18px;
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--sc);
+}
+
+/* Senarai */
+.rk-list {
+  display: grid;
+  gap: 6px;
+}
+.rk-it {
+  background: var(--card);
+  border: 1px solid var(--rk-line);
+  border-radius: 12px;
+}
+.rk-it.top3 {
+  display: none;
+}
+.rk-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  border-radius: 12px;
+}
+.rk-row:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: -2px;
+}
+.rk-no {
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--rk-muted);
+}
+.rk-mid {
+  min-width: 0;
+}
+.rk-nm {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.rk-nm small {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--rk-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rk-more {
+  padding: 0 12px 12px 56px;
+  font-size: 12px;
+  color: var(--rk-muted);
+  display: grid;
+  gap: 4px;
+}
+.rk-more[hidden] {
+  display: none;
+}
+
+/* Trek 12 minggu */
+.rk-track {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.rk-w {
+  flex: 1;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--rk-off);
+  display: block;
+}
+.rk-w.attended,
+.rk-w.attended2 {
+  background: var(--sc);
+}
+.rk-w.attended2 {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.rk-w.booked {
+  background: var(--rk-booked);
+  box-shadow: inset 0 0 0 1.5px var(--yellow);
+}
+.rk-w.current {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--yellow);
+}
+.rk-w.future {
+  background: transparent;
+  border: 1px dashed var(--rk-line);
+}
+
+/* Footer */
+.rk-foot {
+  font-size: 11px;
+  color: var(--rk-muted);
+  display: grid;
+  gap: 6px;
+}
+.rk-foot p {
+  margin: 0;
+}
+.rk-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rk-legend span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.rk-legend .rk-w {
+  flex: none;
+  width: 14px;
+  height: 10px;
+}
+
+/* Keadaan muat / ralat */
+.rk-state {
+  padding: 40px 0;
+  text-align: center;
+}
+.rk-skel {
+  display: grid;
+  gap: 6px;
+}
+.rk-skel-row {
+  height: 58px;
+  border-radius: 12px;
+  background: var(--rk-off);
+  animation: rk-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rk-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (min-width: 900px) {
+  .rk-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .rk-it.top3 {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-skel-row {
+    animation: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .rk-podium {
+    gap: 6px;
+  }
+  .rk-high dl > div {
+    flex-wrap: wrap;
+  }
+}

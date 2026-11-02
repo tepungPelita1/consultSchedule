@@ -6,8 +6,6 @@ import {
   useAllowlist,
   useBookingWeeks,
   useBookings,
-  useClearWeekBookings,
-  useClearWeekExtraClasses,
   useSetBookingStatus,
 } from '@/lib/useSchedule'
 import type { Booking, BookingStatus, Weekday } from '@/lib/types'
@@ -65,11 +63,7 @@ function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: Mad
   const bookingWeeks = useBookingWeeks(weeks)
   const allowlist = useAllowlist(pin)
   const setStatus = useSetBookingStatus(weekStart)
-  const clearBookings = useClearWeekBookings(weekStart)
-  const clearAdhoc = useClearWeekExtraClasses(weekStart)
 
-  const [confirming, setConfirming] = useState(false)
-  const [resetText, setResetText] = useState('')
   const [showStudents, setShowStudents] = useState(false)
 
   const fail = (err: unknown) => {
@@ -87,34 +81,6 @@ function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: Mad
       toast.success(t('updated'))
     } catch (err) {
       fail(err)
-    }
-  }
-
-  const busy = clearBookings.isPending || clearAdhoc.isPending
-
-  // Reset minggu: kosongkan tempahan + kelas ad-hoc. Sahkan dengan taip "reset".
-  const handleReset = async () => {
-    if (!confirming) {
-      setConfirming(true)
-      return
-    }
-    if (resetText.trim().toLowerCase() !== 'reset') return
-    try {
-      await clearBookings.mutateAsync(pin)
-      await clearAdhoc.mutateAsync(pin)
-      toast.success(t('resetDone'))
-      setConfirming(false)
-      setResetText('')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : ''
-      if (message.toUpperCase().includes('UNAUTHORIZED')) {
-        onUnauthorized()
-      } else if (/COULD NOT FIND|DOES NOT EXIST|PGRST202|SCHEMA CACHE/i.test(message)) {
-        toast.error(t('resetError'))
-      } else {
-        toast.error(t('errorMsg'))
-      }
-      console.error('[reset week]', err)
     }
   }
 
@@ -229,6 +195,7 @@ function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: Mad
                       </button>
                     </div>
                   )}
+
                 </div>
               )
             })}
@@ -279,49 +246,6 @@ function MadamPanel({ weekStart, weeks, pin, onUnauthorized, onSelectWeek }: Mad
             ) : (
               <p className="meta">{t('noAllowlist')}</p>
             )}
-          </div>
-        )}
-      </section>
-
-      {/* Urus minggu: reset (kosongkan tempahan + kelas ad-hoc) */}
-      <section style={{ marginTop: 16 }}>
-        <h3 className="meta" style={{ margin: '0 0 6px' }}>
-          {t('manageWeek')}
-        </h3>
-        <button
-          type="button"
-          className="pill danger"
-          disabled={busy}
-          onClick={() => void handleReset()}
-        >
-          {t('clearWeek')}
-        </button>
-        {confirming && (
-          <div
-            style={{
-              display: 'flex',
-              gap: 8,
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              marginTop: 8,
-            }}
-          >
-            <input
-              type="text"
-              value={resetText}
-              onChange={(event) => setResetText(event.target.value)}
-              placeholder={t('typeReset')}
-              autoFocus
-              style={{ flex: 1, minWidth: 140 }}
-            />
-            <button
-              type="button"
-              className="pill danger"
-              disabled={busy || resetText.trim().toLowerCase() !== 'reset'}
-              onClick={() => void handleReset()}
-            >
-              {t('confirm')}
-            </button>
           </div>
         )}
       </section>

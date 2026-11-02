@@ -147,6 +147,8 @@ interface WeekTimelineProps {
   slots: WeekSlot[]
   classBlocks: ClassBlock[]
   madamMode: boolean
+  /** Minggu lepas: lihat sahaja (tiada tempah, batal atau ubah kelas). */
+  readOnly?: boolean
   onBook: (block: FreeBlock) => void
   onAddExtra: (block: FreeBlock) => void
   onRemoveExtra: (id: string) => void
@@ -164,6 +166,7 @@ function WeekTimeline({
   slots,
   classBlocks,
   madamMode,
+  readOnly = false,
   onBook,
   onAddExtra,
   onRemoveExtra,
@@ -440,7 +443,7 @@ function WeekTimeline({
                   const left = pct(toMinutes(block.start_time))
                   const right = 100 - pct(toMinutes(block.end_time))
                   const isAdhoc = block.week_start != null
-                  const canRemove = isAdhoc && madamMode
+                  const canRemove = isAdhoc && madamMode && !readOnly
                   const adhocNarrow =
                     isAdhoc && toMinutes(block.end_time) - toMinutes(block.start_time) <= 30
                   // Kelas tambahan penuh rentas track; kelas tetap kekal dalam lane.
@@ -529,7 +532,7 @@ function WeekTimeline({
                         </span>
                       </>
                     )
-                    if (madamMode) {
+                    if (madamMode || readOnly) {
                       return (
                         <div
                           key={group.key}

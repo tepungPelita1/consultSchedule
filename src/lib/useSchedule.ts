@@ -8,8 +8,7 @@ import {
   mockAddBooking,
   mockAddExtraClass,
   mockCancelBookingBySlot,
-  mockClearWeekBookings,
-  mockClearWeekExtraClasses,
+  mockGetLeaderboard,
   mockRemoveAllowlist,
   mockRemoveExtraClass,
   mockSetStatus,
@@ -19,12 +18,11 @@ import {
   addExtraClass,
   bookSlot,
   cancelBookingBySlot,
-  clearWeekBookings,
-  clearWeekExtraClasses,
   fetchAllowlist,
   fetchBookingWeeks,
   fetchBookings,
   fetchClassBlocks,
+  fetchLeaderboard,
   fetchWeekSlots,
   getCurrentWeekStart,
   madamVerify,
@@ -33,6 +31,8 @@ import {
   setBookingStatus,
 } from './slots'
 import type { ExtraClassInput } from './slots'
+import type { LeaderboardData } from './leaderboard'
+import { SEMESTER_WEEK1_START } from './utils'
 import { isSupabaseConfigured } from './supabase'
 import type {
   AllowlistEntry,
@@ -57,6 +57,10 @@ const classBlocksKey = (weekStart: string) => ['class-blocks', weekStart] as con
 const bookingsKey = (weekStart: string) => ['bookings', weekStart] as const
 const allowlistKey = ['allowlist'] as const
 const bookingWeeksKey = ['booking-weeks'] as const
+const leaderboardKey = ['leaderboard'] as const
+
+/** Panjang musim papan markah dalam mod mock (server: private.app_config.season_weeks). */
+const MOCK_SEASON_WEEKS = 12
 
 /* ------------------------------------------------------------------ *
  * Slots + class blocks (minggu berkenaan)
@@ -144,6 +148,7 @@ export function useBookRange(weekStart: string) {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
+      void queryClient.invalidateQueries({ queryKey: leaderboardKey })
     },
   })
 }
@@ -171,7 +176,28 @@ export function useCancelBooking(weekStart: string) {
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
+      void queryClient.invalidateQueries({ queryKey: leaderboardKey })
     },
+  })
+}
+
+/* ------------------------------------------------------------------ *
+ * Papan markah
+ * ------------------------------------------------------------------ */
+
+export function useLeaderboard() {
+  return useQuery({
+    queryKey: leaderboardKey,
+    queryFn: async (): Promise<LeaderboardData> => {
+      if (isSupabaseConfigured) return fetchLeaderboard()
+      await delay(300)
+      return mockGetLeaderboard(
+        SEMESTER_WEEK1_START,
+        MOCK_SEASON_WEEKS,
+        getCurrentWeekStart(),
+      )
+    },
+    staleTime: 60_000,
   })
 }
 
@@ -185,7 +211,8 @@ export function useBookings(weekStart: string, pin: string) {
     queryFn: async (): Promise<Booking[]> => {
       if (isSupabaseConfigured) return fetchBookings(weekStart, pin)
       await delay(200)
-      return ensureMockBookings(weekStart).filter((b) => b.week_start === weekStart)
+      // Seed sentiasa ikut minggu semasa (bukan minggu yang sedang dibuka).
+      return ensureMockBookings(getCurrentWeekStart()).filter((b) => b.week_start === weekStart)
     },
     enabled: Boolean(pin),
   })
@@ -229,6 +256,7 @@ export function useSetBookingStatus(weekStart: string) {
       void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
       void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
+      void queryClient.invalidateQueries({ queryKey: leaderboardKey })
     },
   })
 }
@@ -340,39 +368,6 @@ export function useRemoveExtraClass(weekStart: string) {
       await delay(200)
       if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
       mockRemoveExtraClass(id)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: classBlocksKey(weekStart) })
-      void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
-    },
-  })
-}
-
-export function useClearWeekBookings(weekStart: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (pin: string): Promise<void> => {
-      if (isSupabaseConfigured) return clearWeekBookings(weekStart, pin)
-      await delay(200)
-      if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
-      mockClearWeekBookings(weekStart)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: bookingsKey(weekStart) })
-      void queryClient.invalidateQueries({ queryKey: weekSlotsKey(weekStart) })
-      void queryClient.invalidateQueries({ queryKey: bookingWeeksKey })
-    },
-  })
-}
-
-export function useClearWeekExtraClasses(weekStart: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (pin: string): Promise<void> => {
-      if (isSupabaseConfigured) return clearWeekExtraClasses(weekStart, pin)
-      await delay(200)
-      if (pin !== MOCK_MADAM_PIN) throw new Error('UNAUTHORIZED')
-      mockClearWeekExtraClasses(weekStart)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: classBlocksKey(weekStart) })

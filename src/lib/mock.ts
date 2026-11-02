@@ -1,3 +1,5 @@
+import { addDays, format, parseISO } from 'date-fns'
+import type { LeaderboardData, WeekCount } from './leaderboard'
 import type {
   AllowlistEntry,
   Booking,
@@ -81,7 +83,21 @@ const INITIAL_ALLOWLIST: AllowlistEntry[] = [
 
 // Booking contoh (status akan di-render ikut minggu semasa)
 export function initialMockBookings(weekStart: string): Booking[] {
+  const prevWeek = format(addDays(parseISO(weekStart), -7), 'yyyy-MM-dd')
   return [
+    // Minggu lepas (approved) — nampak bila buka minggu lepas & dikira dalam papan markah.
+    {
+      id: 'b0',
+      week_start: prevWeek,
+      day_of_week: 3,
+      slot_start: '12:00',
+      slot_end: '12:30',
+      student_id: '2099000066',
+      student_name: 'STD6',
+      mode: 'inperson',
+      status: 'approved',
+      created_at: '',
+    },
     {
       id: 'b1',
       week_start: weekStart,
@@ -181,6 +197,73 @@ export function mockSetStatus(id: string, status: Booking['status']): void {
   store.bookings = store.bookings.map((b) => (b.id === id ? { ...b, status } : b))
 }
 
+// ---------- Papan markah (demo) ----------
+// Corak kehadiran contoh bagi minggu yang dah selesai (ikut prototaip spec).
+// Nilai = bilangan sesi hadir minggu itu. Minggu selepas corak ini → diulang.
+const MOCK_ATTENDANCE: Record<string, number[]> = {
+  '2099000033': [1, 1, 1, 1, 1], // STD3
+  '2099000044': [1, 1, 2, 0, 1], // STD4
+  '2099000011': [1, 0, 1, 1, 1], // STD1
+  '2099000022': [0, 1, 1, 0, 1], // STD2
+  '2099000066': [1, 0, 0, 1, 0], // STD6
+  '2099000077': [0, 1, 0, 0, 0], // STD7
+  '2099000055': [0, 0, 0, 0, 0], // STD5
+}
+
+/** Pelajar demo yang "dah tempah" minggu semasa (selain tempahan sebenar dalam store). */
+const MOCK_BOOKED_THIS_WEEK = new Set(['2099000033', '2099000022'])
+
+export function mockGetLeaderboard(
+  seasonStart: string,
+  lengthWeeks: number,
+  currentWeekStart: string,
+): LeaderboardData {
+  const diffDays = Math.round(
+    (parseISO(currentWeekStart).getTime() - parseISO(seasonStart).getTime()) / 86_400_000,
+  )
+  const currentWeek = Math.floor(diffDays / 7) + 1
+  const done = Math.min(Math.max(currentWeek - 1, 0), lengthWeeks)
+  const bookings = ensureMockBookings(currentWeekStart)
+
+  const students = [...store.allowlist]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((entry) => {
+      const base = MOCK_ATTENDANCE[entry.student_id] ?? []
+      const weeks: WeekCount[] = Array.from({ length: lengthWeeks }, (_, i) => {
+        if (i >= done) return null
+        const weekStart = format(addDays(parseISO(seasonStart), i * 7), 'yyyy-MM-dd')
+        const approved = bookings.filter(
+          (b) =>
+            b.student_id === entry.student_id &&
+            b.week_start === weekStart &&
+            b.status === 'approved',
+        ).length
+        const demo = base.length > 0 ? base[i % base.length] : 0
+        return demo + approved
+      })
+      const bookedThisWeek =
+        MOCK_BOOKED_THIS_WEEK.has(entry.student_id) ||
+        bookings.some(
+          (b) =>
+            b.student_id === entry.student_id &&
+            b.week_start === currentWeekStart &&
+            (b.status === 'pending' || b.status === 'approved'),
+        )
+      return {
+        key: entry.id,
+        full_name: entry.full_name || entry.name,
+        short_name: entry.name,
+        weeks,
+        booked_this_week: bookedThisWeek,
+      }
+    })
+
+  return {
+    season: { start_date: seasonStart, length_weeks: lengthWeeks, current_week: currentWeek },
+    students,
+  }
+}
+
 export function mockAddAllowlist(studentId: string, name: string): void {
   store.allowlist = [
     ...store.allowlist.filter((e) => e.student_id !== studentId),
@@ -200,13 +283,6 @@ export function mockRemoveExtraClass(id: string): void {
   store.extraClasses = store.extraClasses.filter((b) => b.id !== id)
 }
 
-export function mockClearWeekBookings(weekStart: string): void {
-  store.bookings = store.bookings.filter((b) => b.week_start !== weekStart)
-}
-
-export function mockClearWeekExtraClasses(weekStart: string): void {
-  store.extraClasses = store.extraClasses.filter((c) => c.week_start !== weekStart)
-}
 
 // ---------- Generators ----------
 function toMinutes(time: string): number {

@@ -1,4 +1,5 @@
 import { addDays, format, parseISO } from 'date-fns'
+import type { LeaderboardData } from './leaderboard'
 import { supabase } from './supabase'
 import type { AllowlistEntry, Booking, BookingMode, ClassBlock, WeekSlot, Weekday } from './types'
 
@@ -197,18 +198,9 @@ export async function removeExtraClass(id: string, pin: string): Promise<void> {
   if (error) throw error
 }
 
-export async function clearWeekBookings(weekStart: string, pin: string): Promise<void> {
-  const { error } = await supabase.rpc('clear_week_bookings', {
-    p_week_start: weekStart,
-    p_pin: pin,
-  })
+/** Papan markah musim semasa (awam — tiada student ID). */
+export async function fetchLeaderboard(): Promise<LeaderboardData> {
+  const { data, error } = await supabase.rpc('get_leaderboard')
   if (error) throw error
-}
-
-export async function clearWeekExtraClasses(weekStart: string, pin: string): Promise<void> {
-  const { error } = await supabase.rpc('clear_week_extra_classes', {
-    p_week_start: weekStart,
-    p_pin: pin,
-  })
-  if (error) throw error
+  return data as LeaderboardData
 }

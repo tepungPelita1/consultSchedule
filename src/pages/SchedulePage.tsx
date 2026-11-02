@@ -11,13 +11,20 @@ import { interpolate, useI18n } from '@/lib/i18n'
 import { getBookableWeeks, getCurrentWeekStart, getMaxBookableWeekStart } from '@/lib/slots'
 import { useAddExtraClass, useRemoveExtraClass, useWeekView } from '@/lib/useSchedule'
 import type { FreeBlock, WeekSlot } from '@/lib/types'
-import { weekRangeLabel } from '@/lib/utils'
+import { SEMESTER_WEEK1_START, weekRangeLabel } from '@/lib/utils'
 
-function SchedulePage() {
+interface SchedulePageProps {
+  onShowRank: () => void
+}
+
+function SchedulePage({ onShowRank }: SchedulePageProps) {
   const { t, lang } = useI18n()
   const currentWeekStart = getCurrentWeekStart()
   const maxWeekStart = getMaxBookableWeekStart()
   const bookableWeeks = getBookableWeeks()
+  // Navigasi: minggu lepas sejak Week 1 (lihat sahaja) hingga minggu semasa + 2 (boleh tempah).
+  const minWeekStart =
+    SEMESTER_WEEK1_START < currentWeekStart ? SEMESTER_WEEK1_START : currentWeekStart
   const [weekStart, setWeekStart] = useState<string>(currentWeekStart)
   const [madamMode, setMadamMode] = useState<boolean>(() =>
     Boolean(sessionStorage.getItem('csi.madamPin')),
@@ -34,11 +41,12 @@ function SchedulePage() {
   const removeExtra = useRemoveExtraClass(weekStart)
 
   const freeCount = slots.filter((s) => s.status === 'available').length
+  const isPastWeek = weekStart < currentWeekStart
 
   const shift = (days: number) => {
     const next = format(addDays(parseISO(weekStart), days), 'yyyy-MM-dd')
-    // Had tempahan: minggu semasa hingga +2 minggu sahaja.
-    if (next < currentWeekStart || next > maxWeekStart) return
+    // Had navigasi: Week 1 (lihat sahaja) hingga minggu semasa +2 (boleh tempah).
+    if (next < minWeekStart || next > maxWeekStart) return
     setWeekStart(next)
   }
 
@@ -105,7 +113,7 @@ function SchedulePage() {
     >
       <FolderHeader
         weekStart={weekStart}
-        canPrev={weekStart > currentWeekStart}
+        canPrev={weekStart > minWeekStart}
         canNext={weekStart < maxWeekStart}
         onPrev={() => shift(-7)}
         onNext={() => shift(7)}
@@ -116,7 +124,7 @@ function SchedulePage() {
         <div>
           <h2>{weekRangeLabel(weekStart, lang)}</h2>
           <span className="meta" style={{ letterSpacing: '0.02em', textTransform: 'none' }}>
-            {t('bookingWindow')}
+            {isPastWeek ? t('pastWeekView') : t('bookingWindow')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -167,6 +175,7 @@ function SchedulePage() {
           slots={slots}
           classBlocks={classBlocks}
           madamMode={madamMode}
+          readOnly={isPastWeek}
           onBook={setSelected}
           onAddExtra={(block) => void handleAddExtra(block)}
           onRemoveExtra={(id) => void handleRemoveExtra(id)}
@@ -177,12 +186,21 @@ function SchedulePage() {
       <div className="hint">
         <span>
           <span style={{ display: 'block' }}>
-            {freeCount > 0 ? interpolate(t('freeSlots'), { n: freeCount }) : t('freeSlotsNone')}
+            {isPastWeek
+              ? t('pastWeekHint')
+              : freeCount > 0
+                ? interpolate(t('freeSlots'), { n: freeCount })
+                : t('freeSlotsNone')}
           </span>
-          <span className="meta" style={{ letterSpacing: '0.02em', textTransform: 'none' }}>
-            {t('dragHint')}
-          </span>
+          {!isPastWeek && (
+            <span className="meta" style={{ letterSpacing: '0.02em', textTransform: 'none' }}>
+              {t('dragHint')}
+            </span>
+          )}
         </span>
+        <button type="button" className="rank-btn" onClick={onShowRank}>
+          🏆 {t('rankButton')}
+        </button>
         <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
           <input
             type="checkbox"

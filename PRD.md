@@ -95,7 +95,7 @@ git checkout staging
 - Tiada data dipadam automatik. Tempahan disimpan ikut `week_start`, jadi minggu baru **kosong** dengan sendirinya (semua slot jadi hijau semula).
 - Kelas tetap (`class_blocks.week_start = null`) berulang setiap minggu; kelas tambahan pula ikut minggu tertentu.
 - Minggu yang dah tamat keluar dari tetingkap navigasi (minggu semasa + 2) — tidak boleh dilihat/ditempah lagi.
-- Madam boleh reset sesuatu minggu secara manual: butang **"Reset minggu"** (`t('clearWeek')`) → kosongkan tempahan + kelas tambahan minggu itu (`clear_week_bookings`, `clear_week_extra_classes`), sahkan dengan taip `reset`.
+- ~~Butang "Reset minggu" dalam Mod madam~~ — **dibuang** (Nov 2026) supaya data kehadiran untuk papan markah tidak terpadam. RPC `clear_week_bookings` / `clear_week_extra_classes` masih wujud di server tetapi tiada UI memanggilnya.
 - `0011_security_patch.sql` mesti guna `DROP FUNCTION` sebelum `CREATE FUNCTION` untuk `public.madam_verify` dan `private.check_madam` — PostgreSQL tak benarkan `CREATE OR REPLACE` tukar bahasa fungsi (SQL → plpgsql).
 - PIN Mod madam: `GANTI_PIN_INI` (hash bcrypt dalam `private.app_config`). Tukar PIN:
 
