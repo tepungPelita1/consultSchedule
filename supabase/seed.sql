@@ -1,27 +1,10 @@
 -- =============================================================
--- seed.sql — Data awal (JADUAL SEBENAR Madam Idayati)
+-- seed.sql — Jadual kelas sebenar (Madam Idayati)
 -- Universiti Teknologi MARA (UiTM) Cawangan Melaka
 -- Semester September 2026 -- February 2027
 -- JALANKAN SELEPAS migration 0001 – 0007
+-- Senarai pelajar TIDAK di sini: ia dalam supabase/seed_private.sql (tidak di-commit).
 -- =============================================================
-
--- Senarai pelajar (allowlist)
--- name = kod pendek (dipapar pada blok) · full_name = nama penuh (hover/tap)
--- student_id: 10 digit nombor
--- (Jika migration 0006 belum dijalankan, baris di bawah tambah kolumnya.)
-alter table public.allowlist
-  add column if not exists full_name text not null default '';
-
-insert into public.allowlist (student_id, name, full_name) values
-  ('2099000011', 'STD1', 'ALI BIN ABU'),
-  ('2099000022', 'STD2', 'SITI AMINAH BINTI OSMAN'),
-  ('2099000033', 'STD3', 'MUHAMMAD FARID BIN HASSAN'),
-  ('2099000044', 'STD4', 'NUR AISYAH BINTI KAMAL'),
-  ('2099000055', 'STD5', 'ZULKARNAIN BIN IBRAHIM'),
-  ('2099000066', 'STD6', 'AHMAD HAFIZ BIN SULAIMAN'),
-  ('2099000077', 'STD7', 'MARINA BINTI YUSOF')
-on conflict (student_id) do update
-  set name = excluded.name, full_name = excluded.full_name;
 
 -- ===== JADUAL KELAS (week_start = NULL -> berulang setiap minggu) =====
 -- Reset jadual berulang lama supaya boleh run seed berulang tanpa duplikasi
