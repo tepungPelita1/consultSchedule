@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { I18nProvider } from '@/lib/I18nProvider'
+import ConfigWarning from '@/components/ConfigWarning'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import SchedulePage from '@/pages/SchedulePage'
 
@@ -54,6 +55,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
+        <ConfigWarning />
         {view === 'rank' ? (
           <LeaderboardPage onBack={() => go('schedule')} />
         ) : (

@@ -30,3 +30,4 @@ dist-ssr
 
 # Fail setup sekali sahaja (kekal lokal, tak masuk repo)
 supabase/setup_all.sql
+supabase/seed_private.sql

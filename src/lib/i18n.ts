@@ -66,6 +66,9 @@ const en = {
   noAllowlist: 'No students in the list yet.',
   bookingSent: 'Booking sent! Waiting for approval.',
   demoMode: 'Demo mode — Supabase not connected',
+  configMissing: 'Supabase build variables not set — bookings & ranking won’t load.',
+  configMissingHint:
+    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Cloudflare → Build → Build variables and secrets.',
   successTitle: 'Request sent',
   successBody: 'Your slot is pending. Madam will approve it soon.',
   added: 'Added to list',
@@ -223,6 +226,9 @@ const ms: Record<TranslationKey, string> = {
   noAllowlist: 'Belum ada pelajar dalam senarai.',
   bookingSent: 'Tempahan dihantar! Menunggu kelulusan.',
   demoMode: 'Mod demo — Supabase belum disambung',
+  configMissing: 'Build variables Supabase belum diset — tempahan & ranking tidak akan dimuatkan.',
+  configMissingHint:
+    'Tetapkan VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY dalam Cloudflare → Build → Build variables and secrets.',
   successTitle: 'Permohonan dihantar',
   successBody: 'Slot anda menunggu kelulusan Madam.',
   added: 'Ditambah ke senarai',

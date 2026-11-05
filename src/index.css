@@ -1528,3 +1528,26 @@ html.theme-switching *::after {
     flex-wrap: wrap;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Amaran konfigurasi (Build variables Supabase belum diset)
+ * ------------------------------------------------------------------ */
+.config-warning {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  padding: 10px 16px;
+  background: var(--amber-light);
+  color: #4a2a08;
+  border-bottom: 2px solid var(--amber);
+  font-size: 13px;
+}
+.config-warning b {
+  font-weight: 600;
+}
+.config-warning span {
+  opacity: 0.85;
+  font-size: 12px;
+}
