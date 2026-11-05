@@ -8,7 +8,7 @@ import {
   LEVEL_COLORS,
   buildStandings,
   compareRank,
-  completedWeeks,
+  scoredWeeks,
   gapReason,
   paceFor,
   weekState,
@@ -97,7 +97,8 @@ function LeaderboardPage({ onBack }: LeaderboardPageProps) {
   const data = query.data
   const season = data?.season
   const standings = data ? buildStandings(data) : []
-  const done = season ? completedWeeks(season) : 0
+  // Minggu yang dah dikira — termasuk minggu semasa sebaik ada sesi yang habis.
+  const done = data ? scoredWeeks(data) : 0
   const total = season?.length_weeks ?? 12
 
   const subtitle = interpolate(t('rankSeason'), { n: total })
@@ -194,6 +195,7 @@ function LeaderboardPage({ onBack }: LeaderboardPageProps) {
     }
     if (reason.kind === 'streak') return interpolate(t('rankLevelStreak'), { name: above.name })
     if (reason.kind === 'sessions') return interpolate(t('rankLevelSessions'), { name: above.name })
+    if (reason.kind === 'first') return interpolate(t('rankLevelFirst'), { name: above.name })
     return interpolate(t('rankLevelName'), { name: above.name })
   }
 

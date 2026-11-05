@@ -16,6 +16,26 @@ function klDateParts(): { year: number; month: number; day: number } {
   return { year: get('year'), month: get('month'), day: get('day') }
 }
 
+/**
+ * Masa sekarang di KL sebagai 'YYYY-MM-DDTHH:mm:ss' (tempatan, tanpa zon).
+ * Boleh dibanding terus sebagai string dengan cap masa slot konsultasi.
+ * Padanan server: `private.kl_now()` dalam 0020_live_scoring.sql.
+ */
+export function klNowStamp(): string {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+    .format(new Date())
+    .replace(' ', 'T')
+}
+
 // Isnin minggu berjalan (format YYYY-MM-DD) mengikut Asia/Kuala_Lumpur.
 // Guna tengah hari untuk elak sebarang isu offset; kita cuma perlukan weekday.
 // Rollover: 12:00AM Sabtu — minggu kerja dah tamat, jadi "minggu semasa" terus

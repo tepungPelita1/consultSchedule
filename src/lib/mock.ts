@@ -1,5 +1,6 @@
 import { addDays, format, parseISO } from 'date-fns'
 import type { LeaderboardData, WeekCount } from './leaderboard'
+import { klNowStamp } from './slots'
 import type {
   AllowlistEntry,
   Booking,
@@ -213,6 +214,21 @@ const MOCK_ATTENDANCE: Record<string, number[]> = {
 /** Pelajar demo yang "dah tempah" minggu semasa (selain tempahan sebenar dalam store). */
 const MOCK_BOOKED_THIS_WEEK = new Set(['2099000033', '2099000022'])
 
+const hms = (time: string) => (time.length === 5 ? `${time}:00` : time)
+
+/** Cap masa sesi ('YYYY-MM-DDTHH:mm:ss') bagi masa mula/tamat slot. */
+function consultStamp(booking: Booking, time: string): string {
+  const day = format(
+    addDays(parseISO(booking.week_start), booking.day_of_week - 1),
+    'yyyy-MM-dd',
+  )
+  return `${day}T${hms(time)}`
+}
+
+/** Sesi approved yang dah habis — padanan syarat slot_end <= kl_now() di server. */
+const isDone = (booking: Booking, now: string) =>
+  booking.status === 'approved' && consultStamp(booking, booking.slot_end) <= now
+
 export function mockGetLeaderboard(
   seasonStart: string,
   lengthWeeks: number,
@@ -224,23 +240,39 @@ export function mockGetLeaderboard(
   const currentWeek = Math.floor(diffDays / 7) + 1
   const done = Math.min(Math.max(currentWeek - 1, 0), lengthWeeks)
   const bookings = ensureMockBookings(currentWeekStart)
+  const now = klNowStamp()
 
   const students = [...store.allowlist]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((entry) => {
       const base = MOCK_ATTENDANCE[entry.student_id] ?? []
+      // Sama macam 0020_live_scoring.sql: sesi approved yang DAH HABIS terus
+      // dikira, termasuk dalam minggu semasa. Minggu semasa kekal null selagi
+      // belum ada sesi habis; minggu hadapan sentiasa null.
       const weeks: WeekCount[] = Array.from({ length: lengthWeeks }, (_, i) => {
-        if (i >= done) return null
+        if (i >= currentWeek) return null
         const weekStart = format(addDays(parseISO(seasonStart), i * 7), 'yyyy-MM-dd')
-        const approved = bookings.filter(
+        const attended = bookings.filter(
           (b) =>
-            b.student_id === entry.student_id &&
-            b.week_start === weekStart &&
-            b.status === 'approved',
+            b.student_id === entry.student_id && b.week_start === weekStart && isDone(b, now),
         ).length
-        const demo = base.length > 0 ? base[i % base.length] : 0
-        return demo + approved
+        const demo = i < done && base.length > 0 ? base[i % base.length] : 0
+        const total = demo + attended
+        if (i === currentWeek - 1 && total === 0) return null
+        return total
       })
+      const lastWeekStart = format(addDays(parseISO(seasonStart), (lengthWeeks - 1) * 7), 'yyyy-MM-dd')
+      const firstSlotAt =
+        bookings
+          .filter(
+            (b) =>
+              b.student_id === entry.student_id &&
+              b.week_start >= seasonStart &&
+              b.week_start <= lastWeekStart &&
+              isDone(b, now),
+          )
+          .map((b) => consultStamp(b, b.slot_start))
+          .sort()[0] ?? null
       const bookedThisWeek =
         MOCK_BOOKED_THIS_WEEK.has(entry.student_id) ||
         bookings.some(
@@ -254,6 +286,7 @@ export function mockGetLeaderboard(
         full_name: entry.full_name || entry.name,
         short_name: entry.name,
         weeks,
+        first_slot_at: firstSlotAt,
         booked_this_week: bookedThisWeek,
       }
     })

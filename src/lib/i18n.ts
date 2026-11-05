@@ -132,6 +132,7 @@ const en = {
   rankBehindOne: '1 week behind {name}',
   rankLevelStreak: 'Level with {name} on weeks, behind on longest streak',
   rankLevelSessions: 'Level with {name} on weeks, behind on total sessions',
+  rankLevelFirst: 'Level with {name} on everything, but {name} consulted earlier',
   rankLevelName: 'Level with {name} on everything (listed by name)',
   rankLeading: 'Leading the season',
   rankPace: 'Pace: about {a} of {b} weeks',
@@ -140,7 +141,7 @@ const en = {
   rankAttendedLine: 'Attended {a} of {b} weeks · {s} sessions',
   rankStreakLine: 'Longest streak {n} wk · current {c}',
   rankRule:
-    'Ranked by weeks with an approved consultation, out of {n}. A week counts once, however many consults you book in it, and only after the week ends. Ties go to the longest streak, then total sessions.',
+    'Ranked by weeks with an approved consultation, out of {n}. A week counts once, however many consults you book in it, and it counts as soon as the session is over. Ties go to the longest streak, then total sessions, then whoever consulted earlier.',
   rankLevels: 'Level by weeks consulted: Gold 80%+, Silver 50%+, Bronze below.',
   levelGold: 'Gold',
   levelSilver: 'Silver',
@@ -292,6 +293,7 @@ const ms: Record<TranslationKey, string> = {
   rankBehindOne: '1 minggu di belakang {name}',
   rankLevelStreak: 'Seri dengan {name} pada minggu, kalah pada streak terpanjang',
   rankLevelSessions: 'Seri dengan {name} pada minggu, kalah pada jumlah sesi',
+  rankLevelFirst: 'Seri penuh dengan {name}, tapi {name} konsultasi lebih awal',
   rankLevelName: 'Seri penuh dengan {name} (disusun ikut nama)',
   rankLeading: 'Mendahului musim',
   rankPace: 'Jangkaan: kira-kira {a} daripada {b} minggu',
@@ -300,7 +302,7 @@ const ms: Record<TranslationKey, string> = {
   rankAttendedLine: 'Hadir {a} daripada {b} minggu · {s} sesi',
   rankStreakLine: 'Streak terpanjang {n} minggu · semasa {c}',
   rankRule:
-    'Kedudukan ikut bilangan minggu yang ada konsultasi diluluskan, daripada {n}. Satu minggu dikira sekali sahaja, tak kira berapa konsultasi dibuat, dan hanya selepas minggu itu tamat. Jika seri, ikut streak terpanjang, kemudian jumlah sesi.',
+    'Kedudukan ikut bilangan minggu yang ada konsultasi diluluskan, daripada {n}. Satu minggu dikira sekali sahaja, tak kira berapa konsultasi dibuat, dan ia dikira sebaik sesi itu habis. Jika seri, ikut streak terpanjang, kemudian jumlah sesi, kemudian siapa konsultasi lebih awal.',
   rankLevels: 'Tahap ikut minggu konsultasi: Emas 80%+, Perak 50%+, Gangsa di bawah itu.',
   levelGold: 'Emas',
   levelSilver: 'Perak',

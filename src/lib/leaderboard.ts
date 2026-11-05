@@ -17,6 +17,11 @@ export interface LeaderboardRow {
   full_name: string
   short_name: string
   weeks: WeekCount[]
+  /**
+   * Slot konsultasi paling awal yang dah dikira ('YYYY-MM-DDTHH:mm:ss'),
+   * atau null kalau belum ada. Tie-break terakhir: siapa sesinya dahulu.
+   */
+  first_slot_at: string | null
   booked_this_week: boolean
 }
 
@@ -68,7 +73,7 @@ export function computeStats(weeks: WeekCount[]): {
   let best = 0
   let run = 0
   for (const w of weeks) {
-    if (w === null) break // berhenti pada minggu pertama yang belum selesai
+    if (w === null) break // berhenti pada minggu pertama yang belum diputuskan
     if (w > 0) {
       attended++
       sessions += w
@@ -82,17 +87,42 @@ export function computeStats(weeks: WeekCount[]): {
   return { attended, sessions, best, current }
 }
 
-type Rankable = Pick<StudentStats, 'attended' | 'best' | 'sessions' | 'name'>
+type Rankable = Pick<StudentStats, 'attended' | 'best' | 'sessions' | 'name' | 'first_slot_at'>
+
+/** Siapa sesinya lebih awal, dia di atas. Yang belum ada sesi turun ke bawah. */
+export const compareFirstSlot = (a: Rankable, b: Rankable): number => {
+  if (a.first_slot_at === b.first_slot_at) return 0
+  if (!a.first_slot_at) return 1
+  if (!b.first_slot_at) return -1
+  return a.first_slot_at < b.first_slot_at ? -1 : 1
+}
 
 export const compareRank = (a: Rankable, b: Rankable): number =>
   b.attended - a.attended ||
   b.best - a.best ||
   b.sessions - a.sessions ||
+  compareFirstSlot(a, b) ||
   a.name.localeCompare(b.name)
 
 /** Minggu selesai = sebelum minggu semasa, dihadkan kepada panjang musim. */
 export function completedWeeks(season: SeasonInfo): number {
   return Math.min(Math.max(season.current_week - 1, 0), season.length_weeks)
+}
+
+/**
+ * Minggu yang dah masuk kiraan: minggu selesai, campur minggu semasa sebaik
+ * ada sesi yang dah habis. Jadi penyebut untuk tahap & purata, supaya
+ * `attended` tak boleh melebihi jumlah minggu yang dikira.
+ */
+export function scoredWeeks(data: LeaderboardData): number {
+  const decided = data.students.reduce(
+    (max, row) => Math.max(max, row.weeks.filter((w) => w !== null).length),
+    0,
+  )
+  return Math.min(
+    Math.max(completedWeeks(data.season), decided),
+    data.season.length_weeks,
+  )
 }
 
 export function levelFor(attended: number, completed: number): Level {
@@ -132,7 +162,7 @@ export function nickname(fullName: string, fallback: string): string {
 
 /** Bina statistik + susunan ranking. Warna diberi ikut susunan kod pendek (stabil & unik). */
 export function buildStandings(data: LeaderboardData): StudentStats[] {
-  const completed = completedWeeks(data.season)
+  const completed = scoredWeeks(data)
   const byCode = [...data.students].sort((a, b) => a.short_name.localeCompare(b.short_name))
   const colorOf = new Map(
     byCode.map((row, i) => [row.key, STUDENT_COLORS[i % STUDENT_COLORS.length]] as const),
@@ -157,11 +187,17 @@ export function buildStandings(data: LeaderboardData): StudentStats[] {
 /** Keadaan setiap minggu (index 0-based) bagi seorang pelajar. */
 export function weekState(row: LeaderboardRow, index: number, season: SeasonInfo): WeekState {
   const weekNo = index + 1
+  const count = row.weeks[index]
   if (weekNo < season.current_week) {
-    const n = row.weeks[index] ?? 0
+    const n = count ?? 0
     return n >= 2 ? 'attended2' : n === 1 ? 'attended' : 'missed'
   }
-  if (weekNo === season.current_week) return row.booked_this_week ? 'booked' : 'current'
+  if (weekNo === season.current_week) {
+    // Sesi minggu ini yang dah habis terus hijau. Kalau belum ada (null),
+    // papar 'booked'/'current' — jangan cop 'missed' sebab minggu belum tamat.
+    if (count != null && count > 0) return count >= 2 ? 'attended2' : 'attended'
+    return row.booked_this_week ? 'booked' : 'current'
+  }
   return 'future'
 }
 
@@ -169,9 +205,15 @@ export function weekState(row: LeaderboardRow, index: number, season: SeasonInfo
 export function gapReason(
   me: StudentStats,
   above: StudentStats,
-): { kind: 'weeks'; n: number } | { kind: 'streak' } | { kind: 'sessions' } | { kind: 'name' } {
+):
+  | { kind: 'weeks'; n: number }
+  | { kind: 'streak' }
+  | { kind: 'sessions' }
+  | { kind: 'first' }
+  | { kind: 'name' } {
   if (above.attended !== me.attended) return { kind: 'weeks', n: above.attended - me.attended }
   if (above.best !== me.best) return { kind: 'streak' }
   if (above.sessions !== me.sessions) return { kind: 'sessions' }
+  if (compareFirstSlot(me, above) !== 0) return { kind: 'first' }
   return { kind: 'name' }
 }
