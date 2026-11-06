@@ -587,6 +587,20 @@ html.theme-switching *::after {
 .adhoc-pill.vertical {
   transform: rotate(90deg);
 }
+/* Hari satu lorong (cth Jumaat): blok hanya 48px tinggi, bukan 100px macam
+   hari dua lorong. Pil menegak itu dipusing dengan `transform`, yang TIDAK
+   menempah ruang susun atur — jadi tinggi yang nampak sebenarnya ialah LEBAR
+   pil sebelum dipusing, dan apa yang terkeluar dipotong oleh overflow:hidden.
+   Jadi kecilkan teks & padding pil pada baris ini sahaja; hari dua lorong
+   kekal tidak tersentuh.
+   Kes paling ketat ialah BM "Ditempah" (8 aksara), bukan "Booked" (6) —
+   itulah yang menentukan 8px. Kalau hanya EN yang penting, 10px pun muat. */
+.row.one-lane .booked-pill.vertical,
+.row.one-lane .adhoc-pill.vertical {
+  font-size: 8px;
+  padding: 1px 3px;
+  letter-spacing: 0;
+}
 .blk.booked-pending b {
   font-size: 12px;
   white-space: nowrap;
